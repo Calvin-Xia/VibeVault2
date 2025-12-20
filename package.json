@@ -10,5 +10,11 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.26.1"
+  "packageManager": "pnpm@10.26.1",
+  "dependencies": {
+    "@opennextjs/cloudflare": "^1.14.7"
+  },
+  "devDependencies": {
+    "wrangler": "^4.56.0"
+  }
 }
