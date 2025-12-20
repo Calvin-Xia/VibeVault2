@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "opennextjs-cloudflare build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
