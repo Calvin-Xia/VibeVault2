@@ -54,6 +54,14 @@ build/
 .next/
 .nuxt/
 
+# Database files
+*.db
+*.sqlite
+*.db-journal
+
+# TypeScript build info
+tsconfig.tsbuildinfo
+
 # Package manager files
 .pnpm-lock.yaml
 .yarn.lock
