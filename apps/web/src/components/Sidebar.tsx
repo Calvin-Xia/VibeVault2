@@ -5,7 +5,11 @@ import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { listTags, createTag } from '@/actions/tagActions'
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  statusCounts?: { inbox: number; reading: number; archived: number }
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ statusCounts }) => {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [tags, setTags] = useState<Array<{ id: string; name: string; color: string | null; count: number }>>([])
@@ -15,9 +19,9 @@ const Sidebar: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const statusFilters = [
-    { id: 'inbox', name: '未处理', count: 0, icon: '📥' },
-    { id: 'reading', name: '正在处理', count: 0, icon: '📝' },
-    { id: 'archived', name: '已完成', count: 0, icon: '✅' },
+    { id: 'inbox', name: '未处理', count: statusCounts?.inbox ?? 0, icon: '📥' },
+    { id: 'reading', name: '正在处理', count: statusCounts?.reading ?? 0, icon: '📝' },
+    { id: 'archived', name: '已完成', count: statusCounts?.archived ?? 0, icon: '✅' },
   ]
 
   // Fetch tags on component mount and when pathname changes

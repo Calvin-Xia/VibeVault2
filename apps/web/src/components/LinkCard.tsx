@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { updateLink, deleteLink, addTagToLink, removeTagFromLink } from '@/actions/linkActions'
@@ -43,6 +44,7 @@ interface LinkCardProps {
 
 const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
   const [isEditing, setIsEditing] = useState(false)
+  const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [title, setTitle] = useState(link.title)
   const [description, setDescription] = useState(link.description)
@@ -57,8 +59,7 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
     // Toggle favorite status
     try {
       await updateLink(link.id, { favorite: !link.favorite })
-      // Update local state
-      window.location.reload()
+      router.refresh()
     } catch (error) {
       console.error('Error toggling favorite:', error)
     }
@@ -68,8 +69,7 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
     // Archive link
     try {
       await updateLink(link.id, { status: 'ARCHIVED' })
-      // Update local state
-      window.location.reload()
+      router.refresh()
     } catch (error) {
       console.error('Error archiving link:', error)
     }
@@ -113,8 +113,7 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
       } else {
         await addTagToLink(link.id, tagId)
       }
-      // Update local state
-      window.location.reload()
+      router.refresh()
     } catch (error) {
       console.error('Error toggling tag:', error)
     }

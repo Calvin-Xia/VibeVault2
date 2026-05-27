@@ -47,11 +47,13 @@ export async function createTag(data: { name: string; color?: string }) {
   }
 
   try {
+    const hexColorRegex = /^#[0-9A-Fa-f]{6}$/
+    const safeColor = data.color && hexColorRegex.test(data.color) ? data.color : '#8b5cf6'
     const tag = await prisma.tag.create({
       data: {
         userId: session.user.id,
         name: data.name.trim(),
-        color: data.color || '#8b5cf6',
+        color: safeColor,
       },
     })
 
@@ -109,6 +111,8 @@ export async function updateTag(tagId: string, data: { name: string; color?: str
   }
 
   try {
+    const hexColorRegex = /^#[0-9A-Fa-f]{6}$/
+    const safeColor = data.color && hexColorRegex.test(data.color) ? data.color : '#8b5cf6'
     const tag = await prisma.tag.update({
       where: {
         id: tagId,
@@ -116,7 +120,7 @@ export async function updateTag(tagId: string, data: { name: string; color?: str
       },
       data: {
         name: data.name.trim(),
-        color: data.color || '#8b5cf6',
+        color: safeColor,
       },
     })
 

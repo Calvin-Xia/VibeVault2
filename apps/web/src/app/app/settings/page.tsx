@@ -158,6 +158,14 @@ function Settings() {
       
       // Read file content
       const fileContent = await importFile.text()
+      
+      // Check file size before parsing (10MB limit)
+      if (fileContent.length > 10 * 1024 * 1024) {
+        setMessage({ type: 'error', text: '文件过大，请确保文件小于10MB' })
+        setIsImporting(false)
+        return
+      }
+      
       const importDataJson = JSON.parse(fileContent)
       
       // Import data
