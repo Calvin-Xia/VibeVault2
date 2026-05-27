@@ -3,11 +3,10 @@
   "version": "1.0.0",
   "description": "Prisma schema and client for VibeVault",
   "exports": {
-    ".": "./dist/index.js",
-    "./client": "./dist/client.js"
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts"
   },
   "scripts": {
-    "build": "prisma generate && tsc",
     "generate": "prisma generate",
     "push": "prisma db push",
     "studio": "prisma studio"

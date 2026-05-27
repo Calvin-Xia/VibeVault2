@@ -43,7 +43,7 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
               </div>
             ) : (
               <button
-                onClick={() => signIn()}
+                onClick={() => signIn(undefined, { callbackUrl: '/app' })}
                 className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
               >
                 登录

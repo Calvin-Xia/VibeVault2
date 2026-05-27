@@ -1,0 +1,7 @@
+dev.db
+dev.db-journal
+dist/
+node_modules/
+*.tsbuildinfo
+.env
+.env.local
