@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: process.env.GITHUB_PAGES === 'true' ? 'export' : undefined,
   images: {
+    unoptimized: process.env.GITHUB_PAGES === 'true',
     remotePatterns: [
       {
         protocol: 'https',

@@ -45,6 +45,8 @@ jobs:
             ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
       - name: Build with Next.js
         run: pnpm exec next build
+        env:
+          GITHUB_PAGES: "true"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
