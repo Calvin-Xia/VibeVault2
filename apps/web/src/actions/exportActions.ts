@@ -3,6 +3,49 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@vibevault/db'
+import { z } from 'zod'
+
+const ImportTagSchema = z.object({
+  name: z.string().min(1).max(50),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+})
+
+const ImportLinkTagSchema = z.object({
+  tag: ImportTagSchema.optional(),
+})
+
+const ImportLinkSchema = z.object({
+  url: z.string().url(),
+  normalizedUrl: z.string().optional(),
+  domain: z.string().optional(),
+  title: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  note: z.string().nullable().optional(),
+  ogImage: z.string().nullable().optional(),
+  favicon: z.string().nullable().optional(),
+  siteName: z.string().nullable().optional(),
+  publishedTime: z.string().nullable().optional(),
+  status: z.enum(['INBOX', 'READING', 'ARCHIVED']).optional(),
+  favorite: z.boolean().optional(),
+  collectionId: z.string().nullable().optional(),
+  metadataStatus: z.enum(['PENDING', 'READY', 'FAILED']).optional(),
+  metadataError: z.string().nullable().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  lastVisitedAt: z.string().nullable().optional(),
+  linkTags: z.array(ImportLinkTagSchema).optional(),
+  tags: z.array(ImportTagSchema).optional(),
+})
+
+const ImportDataSchema = z.object({
+  version: z.string().optional(),
+  links: z.array(ImportLinkSchema).optional(),
+  tags: z.array(ImportTagSchema).optional(),
+  collections: z.array(z.object({
+    name: z.string().min(1).max(100),
+    color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  })).optional(),
+})
 
 export async function exportData() {
   const session = await getServerSession(authOptions)
@@ -57,44 +100,20 @@ export async function exportData() {
   }
 }
 
-interface ImportData {
-  version?: string
-  links?: Array<{
-    url: string
-    normalizedUrl?: string
-    domain?: string
-    title?: string
-    description?: string
-    note?: string
-    ogImage?: string
-    favicon?: string
-    siteName?: string
-    publishedTime?: string
-    status?: string
-    favorite?: boolean
-    collectionId?: string
-    metadataStatus?: string
-    metadataError?: string
-    createdAt?: string
-    updatedAt?: string
-    lastVisitedAt?: string
-    linkTags?: Array<{ tag?: { name: string; color?: string } }>
-    tags?: Array<{ name: string; color?: string }>
-  }>
-  tags?: Array<{ name: string; color?: string }>
-  collections?: Array<{ name: string; color?: string }>
-}
-
-export async function importData(data: ImportData) {
+export async function importData(rawData: unknown) {
   const session = await getServerSession(authOptions)
   
   if (!session || !session.user) {
     return { success: false, error: 'User not authenticated' }
   }
 
-  if (!data || typeof data !== 'object') {
-    return { success: false, error: 'Invalid import data format' }
+  // Validate with zod
+  const parsed = ImportDataSchema.safeParse(rawData)
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid import data format: ' + parsed.error.issues.map(i => i.message).join(', ') }
   }
+
+  const data = parsed.data
 
   try {
     // Start a transaction
@@ -133,11 +152,13 @@ export async function importData(data: ImportData) {
       // Import links
       for (const link of data.links || []) {
         try {
-          // Check if link already exists
+          // Check if link already exists using composite unique constraint
           const existingLink = await prisma.link.findUnique({
             where: {
-              url: link.url,
-              userId: session.user.id,
+              userId_url: {
+                userId: session.user.id,
+                url: link.url,
+              },
             },
           })
 
@@ -159,15 +180,15 @@ export async function importData(data: ImportData) {
               ogImage: link.ogImage,
               favicon: link.favicon,
               siteName: link.siteName,
-              publishedTime: link.publishedTime,
-              status: link.status,
-              favorite: link.favorite,
+              publishedTime: link.publishedTime ? new Date(link.publishedTime) : null,
+              status: link.status || 'INBOX',
+              favorite: link.favorite ?? false,
               collectionId: link.collectionId,
-              metadataStatus: link.metadataStatus,
+              metadataStatus: link.metadataStatus || 'PENDING',
               metadataError: link.metadataError,
-              createdAt: link.createdAt,
-              updatedAt: link.updatedAt,
-              lastVisitedAt: link.lastVisitedAt,
+              createdAt: link.createdAt ? new Date(link.createdAt) : undefined,
+              updatedAt: link.updatedAt ? new Date(link.updatedAt) : undefined,
+              lastVisitedAt: link.lastVisitedAt ? new Date(link.lastVisitedAt) : null,
             },
           })
 

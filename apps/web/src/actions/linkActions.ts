@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@vibevault/db'
+import { prisma, Prisma } from '@vibevault/db'
 
 export async function createLink(formData: FormData) {
   const session = await getServerSession(authOptions)
@@ -89,7 +89,7 @@ export async function listLinks(params: {
     return { links: [], total: 0, page: 1, limit: 20 }
   }
 
-  const { status, tag, sortBy = 'createdAt', page = 1, limit = 20, search } = params
+  const { status, tag, sortBy = 'createdAt', page = 1, limit = 20 } = params
   const skip = (page - 1) * limit
 
   const allowedSortFields = ['createdAt', 'lastVisitedAt', 'domain', 'title'] as const
@@ -97,7 +97,7 @@ export async function listLinks(params: {
   const safeSortBy: SortField = allowedSortFields.includes(sortBy as SortField) ? (sortBy as SortField) : 'createdAt'
 
   try {
-    const where: Record<string, unknown> = {
+    const where: Prisma.LinkWhereInput = {
       userId: session.user.id,
     }
 
@@ -118,7 +118,7 @@ export async function listLinks(params: {
     // Search functionality is now implemented client-side with Fuse.js
     // to support advanced fuzzy search with keyboard proximity
 
-    const orderBy: Record<string, string> = {
+    const orderBy: Prisma.LinkOrderByWithRelationInput = {
       [safeSortBy]: 'desc',
     }
 

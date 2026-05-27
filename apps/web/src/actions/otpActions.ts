@@ -12,7 +12,8 @@ const MAX_SENDS_PER_WINDOW = 5
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000
 
 function hashCode(code: string): string {
-  return crypto.createHash('sha256').update(code).digest('hex')
+  const pepper = process.env.OTP_PEPPER || 'vibevault-default-pepper-change-in-production'
+  return crypto.createHash('sha256').update(pepper + code).digest('hex')
 }
 
 function checkRateLimit(email: string): { allowed: boolean; retryAfterMs?: number } {
@@ -128,7 +129,10 @@ export async function verifyOtp(
   })
 
   const inputHash = hashCode(code)
-  if (inputHash !== record.codeHash) {
+  const inputBuffer = Buffer.from(inputHash, 'hex')
+  const recordBuffer = Buffer.from(record.codeHash, 'hex')
+  
+  if (inputBuffer.length !== recordBuffer.length || !crypto.timingSafeEqual(inputBuffer, recordBuffer)) {
     return { success: false, error: '验证码错误，请重试' }
   }
 

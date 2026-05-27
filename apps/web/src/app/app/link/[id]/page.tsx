@@ -5,42 +5,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { getLink, updateLink, deleteLink, addTagToLink, removeTagFromLink } from '@/actions/linkActions'
 import { listTags } from '@/actions/tagActions'
-
-interface Tag {
-  id: string
-  name: string
-  color: string | null
-}
-
-interface LinkTag {
-  tag: Tag
-}
-
-interface LinkVisit {
-  id: string
-  visitedAt: Date
-}
-
-interface Link {
-  id: string
-  title: string
-  url: string
-  domain: string
-  description: string | null
-  note: string | null
-  ogImage: string | null
-  favicon: string | null
-  siteName: string | null
-  createdAt: Date
-  updatedAt: Date
-  lastVisitedAt: Date | null
-  status: 'INBOX' | 'READING' | 'ARCHIVED'
-  favorite: boolean
-  metadataStatus: 'PENDING' | 'READY' | 'FAILED'
-  metadataError: string | null
-  linkTags: LinkTag[]
-  visits?: LinkVisit[]
-}
+import { Link, Tag, LinkStatus } from '@/types/link'
 
 function LinkDetail() {
   const params = useParams()
@@ -110,7 +75,7 @@ function LinkDetail() {
     }
   }
 
-  const handleStatusChange = async (status: 'INBOX' | 'READING' | 'ARCHIVED') => {
+  const handleStatusChange = async (status: LinkStatus) => {
     if (!link) return
     try {
       const result = await updateLink(link.id, { status })

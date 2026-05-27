@@ -6,37 +6,7 @@ import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { updateLink, deleteLink, addTagToLink, removeTagFromLink } from '@/actions/linkActions'
 import { listTags } from '@/actions/tagActions'
-
-interface Tag {
-  id: string
-  name: string
-  color: string | null
-}
-
-interface LinkTag {
-  tag: Tag
-}
-
-interface Link {
-  id: string
-  title: string
-  url: string
-  domain: string
-  description: string
-  note: string
-  ogImage: string | null
-  favicon: string | null
-  siteName: string | null
-  createdAt: Date
-  updatedAt: Date
-  lastVisitedAt: Date | null
-  status: 'INBOX' | 'READING' | 'ARCHIVED'
-  favorite: boolean
-  collectionId: string | null
-  metadataStatus: 'PENDING' | 'READY' | 'FAILED'
-  metadataError: string | null
-  linkTags: LinkTag[]
-}
+import { Link, Tag } from '@/types/link'
 
 interface LinkCardProps {
   link: Link
@@ -46,9 +16,9 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
   const [isEditing, setIsEditing] = useState(false)
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [title, setTitle] = useState(link.title)
-  const [description, setDescription] = useState(link.description)
-  const [note, setNote] = useState(link.note)
+  const [title, setTitle] = useState(link.title ?? '')
+  const [description, setDescription] = useState(link.description ?? '')
+  const [note, setNote] = useState(link.note ?? '')
   const [showTagManager, setShowTagManager] = useState(false)
   const [availableTags, setAvailableTags] = useState<Tag[]>([])
   const [isLoadingTags, setIsLoadingTags] = useState(false)
@@ -296,9 +266,9 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
               <button
                 onClick={() => {
                   setIsEditing(false)
-                  setTitle(link.title)
-                  setDescription(link.description)
-                  setNote(link.note)
+                  setTitle(link.title ?? '')
+                  setDescription(link.description ?? '')
+                  setNote(link.note ?? '')
                 }}
                 className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                 aria-label="取消"

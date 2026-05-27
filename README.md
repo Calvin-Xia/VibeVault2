@@ -9,7 +9,9 @@
 - **UI**: TailwindCSS + Framer Motion
 - **数据层**: Prisma ORM
 - **数据库**: SQLite (开发环境) / PostgreSQL (生产环境)
-- **认证**: NextAuth (GitHub OAuth)
+- **认证**: NextAuth (OTP 邮箱验证码)
+- **邮件**: Resend
+- **部署**: Cloudflare Workers (via OpenNext)
 
 ## 项目结构
 
@@ -308,16 +310,10 @@ npm run dev
 
 ## 部署说明
 
-### Vercel
-1. 连接 GitHub 仓库
-2. 配置环境变量
-3. 部署即可
-
-### Docker
-```bash
-docker build -t vibevault .
-docker run -p 3000:3000 vibevault
-```
+### Cloudflare Workers
+1. 配置环境变量
+2. 运行 `pnpm run build`
+3. 使用 `wrangler deploy` 部署
 
 ## 开发说明
 

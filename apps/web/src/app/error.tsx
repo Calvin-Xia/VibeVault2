@@ -19,7 +19,7 @@ export default function Error({
         <div className="text-6xl mb-4">⚠️</div>
         <h2 className="text-xl font-semibold mb-2">出现了一些问题</h2>
         <p className="text-gray-500 dark:text-gray-400 mb-6">
-          {error.message || '发生了未知错误'}
+          发生了未知错误，请稍后重试
         </p>
         <button
           onClick={reset}

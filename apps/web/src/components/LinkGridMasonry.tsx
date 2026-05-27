@@ -3,39 +3,9 @@
 import React, { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { useSearchParams } from 'next/navigation'
-import Fuse from 'fuse.js'
+import Fuse, { IFuseOptions } from 'fuse.js'
 import LinkCard from './LinkCard'
-
-interface Tag {
-  id: string
-  name: string
-  color: string | null
-}
-
-interface LinkTag {
-  tag: Tag
-}
-
-interface Link {
-  id: string
-  title: string
-  url: string
-  domain: string
-  description: string
-  note: string
-  ogImage: string | null
-  favicon: string | null
-  siteName: string | null
-  createdAt: Date
-  updatedAt: Date
-  lastVisitedAt: Date | null
-  status: 'INBOX' | 'READING' | 'ARCHIVED'
-  favorite: boolean
-  collectionId: string | null
-  metadataStatus: 'PENDING' | 'READY' | 'FAILED'
-  metadataError: string | null
-  linkTags: LinkTag[]
-}
+import { Link } from '@/types/link'
 
 interface LinkGridMasonryProps {
   links: Link[]
@@ -54,7 +24,7 @@ const LinkGridMasonry: React.FC<LinkGridMasonryProps> = ({ links }) => {
     }
 
     // Configure Fuse.js for advanced search
-    const fuseOptions = {
+    const fuseOptions: IFuseOptions<Link> = {
       keys: [
         'title',
         'url',
@@ -71,7 +41,7 @@ const LinkGridMasonry: React.FC<LinkGridMasonryProps> = ({ links }) => {
       shouldSort: true,
       distance: 100, // Allow some distance between matching characters
       findAllMatches: true
-    } as any
+    }
 
     // Initialize Fuse.js
     const fuse = new Fuse(links, fuseOptions)
@@ -106,7 +76,7 @@ const LinkGridMasonry: React.FC<LinkGridMasonryProps> = ({ links }) => {
           <div className="text-6xl mb-4">📌</div>
           <h3 className="text-xl font-medium mb-2">暂无链接</h3>
           <p className="text-gray-500 dark:text-gray-400">
-            点击右上角的"添加链接"按钮开始收藏链接吧
+            点击右上角的&quot;添加链接&quot;按钮开始收藏链接吧
           </p>
         </div>
       ) : (

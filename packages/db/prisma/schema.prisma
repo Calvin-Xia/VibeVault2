@@ -24,7 +24,7 @@ model User {
 model Link {
   id              String   @id @default(cuid())
   userId          String
-  url             String   @unique
+  url             String
   normalizedUrl   String
   domain          String
   title           String?
@@ -47,6 +47,8 @@ model Link {
   collection     Collection?    @relation(fields: [collectionId], references: [id], onDelete: SetNull)
   linkTags       LinkTag[]
   visits         LinkVisit[]
+
+  @@unique([userId, url])
 }
 
 model Tag {

@@ -11,9 +11,18 @@ import ReactFlow, {
   Edge,
   useNodesState,
   useEdgesState,
+  Position,
+  MarkerType,
+  BackgroundVariant,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { listLinks } from '@/actions/linkActions'
+
+interface GraphNodeData {
+  label: string
+  url?: string
+  style?: React.CSSProperties
+}
 
 function GraphView() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
@@ -23,10 +32,9 @@ function GraphView() {
   const [isLoading, setIsLoading] = useState(true)
 
   // Handle node click to open link
-  const handleNodeClick = (event: React.MouseEvent, node: Node) => {
-    if (node.id.startsWith('link-') && node.data && (node.data as any).url) {
-      const url = (node.data as any).url
-      window.open(url, '_blank', 'noopener,noreferrer')
+  const handleNodeClick = (event: React.MouseEvent, node: Node<GraphNodeData>) => {
+    if (node.id.startsWith('link-') && node.data?.url) {
+      window.open(node.data.url, '_blank', 'noopener,noreferrer')
     }
   }
 
@@ -47,7 +55,7 @@ function GraphView() {
       let idCounter = 0
       
       // Separate tags by collecting unique ones first and group links by tag
-      const uniqueTags = new Map<string, any>()
+      const uniqueTags = new Map<string, { id: string; name: string; color: string | null }>()
       
       // First, initialize all tags
       fetchedLinks.forEach((link) => {
@@ -104,7 +112,7 @@ function GraphView() {
             x: tagX,
             y: tagStartY + index * tagSpacing,
           },
-          sourcePosition: 'right', // Edge starts from right side of tag
+          sourcePosition: Position.Right, // Edge starts from right side of tag
           data: {
             label: tag.name,
             style: {
@@ -128,7 +136,6 @@ function GraphView() {
       })
       
       // Add link nodes on the right side of their tags
-      const linkSpacingX = 300 // Horizontal spacing between link columns
       const linkSpacingY = 80 // Vertical spacing between link rows
       const linkStartX = 350 // Start X position for links (moved further right for better curves)
       
@@ -156,7 +163,7 @@ function GraphView() {
               x: linkX,
               y: linkY,
             },
-            targetPosition: 'left', // Edge enters from left side of link
+            targetPosition: Position.Left, // Edge enters from left side of link
             data: {
               label: link.title || link.domain || '未命名链接',
               url: link.url,
@@ -192,7 +199,7 @@ function GraphView() {
             },
             animated: true,
             markerEnd: {
-              type: 'arrow',
+              type: MarkerType.Arrow,
               width: 14,
               height: 14,
               color: tag.color || '#8b5cf6',
@@ -264,7 +271,7 @@ function GraphView() {
             onNodeClick={handleNodeClick}
           >
             <Background 
-              variant="dots" 
+              variant={BackgroundVariant.Dots} 
               gap={20} 
               size={2} 
               color="#94a3b8"
@@ -293,7 +300,6 @@ function GraphView() {
                 }
                 return '#3b82f6' // Blue for links
               }}
-              edgeColor={(edge) => edge.style?.stroke || '#8b5cf6'}
             />
           </ReactFlow>
         </div>
@@ -302,7 +308,7 @@ function GraphView() {
             <div className="text-6xl mb-4">🔗</div>
             <h2 className="text-xl font-medium mb-2">知识图谱视图</h2>
             <p className="text-gray-500 dark:text-gray-400">
-              点击"加载图谱"按钮生成知识图谱，将展示标签与链接之间的关系。
+              点击&quot;加载图谱&quot;按钮生成知识图谱，将展示标签与链接之间的关系。
             </p>
           </div>
         )}
