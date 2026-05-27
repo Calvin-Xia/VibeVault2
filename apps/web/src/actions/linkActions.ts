@@ -28,9 +28,12 @@ export async function createLink(formData: FormData) {
     
     try {
       const parsedUrl = new URL(url)
+      if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+        return { success: false, error: 'Only HTTP and HTTPS URLs are allowed' }
+      }
       normalizedUrl = parsedUrl.toString().split('#')[0]
       domain = parsedUrl.hostname
-    } catch (urlError) {
+    } catch {
       return { success: false, error: 'Invalid URL format' }
     }
 
@@ -89,9 +92,12 @@ export async function listLinks(params: {
   const { status, tag, sortBy = 'createdAt', page = 1, limit = 20, search } = params
   const skip = (page - 1) * limit
 
+  const allowedSortFields = ['createdAt', 'lastVisitedAt', 'domain', 'title'] as const
+  type SortField = typeof allowedSortFields[number]
+  const safeSortBy: SortField = allowedSortFields.includes(sortBy as SortField) ? (sortBy as SortField) : 'createdAt'
+
   try {
-    // Build where clause
-    const where: any = {
+    const where: Record<string, unknown> = {
       userId: session.user.id,
     }
 
@@ -112,9 +118,8 @@ export async function listLinks(params: {
     // Search functionality is now implemented client-side with Fuse.js
     // to support advanced fuzzy search with keyboard proximity
 
-    // Build sort clause
-    const orderBy: any = {
-      [sortBy]: 'desc',
+    const orderBy: Record<string, string> = {
+      [safeSortBy]: 'desc',
     }
 
     // Fetch links with their tags through the LinkTag connection
@@ -199,6 +204,14 @@ export async function addTagToLink(linkId: string, tagId: string) {
       return { success: false, error: 'Tag not found' }
     }
 
+    // Check if link exists and belongs to user
+    const link = await prisma.link.findUnique({
+      where: { id: linkId, userId: session.user.id },
+    })
+    if (!link) {
+      return { success: false, error: 'Link not found' }
+    }
+
     // Create link-tag association
     await prisma.linkTag.create({
       data: {
@@ -244,6 +257,43 @@ export async function removeTagFromLink(linkId: string, tagId: string) {
   } catch (error) {
     console.error('Error removing tag from link:', error)
     return { success: false, error: 'Failed to remove tag from link' }
+  }
+}
+
+export async function getLink(linkId: string) {
+  const session = await getServerSession(authOptions)
+  
+  if (!session || !session.user) {
+    return { success: false, error: 'User not authenticated' }
+  }
+
+  try {
+    const link = await prisma.link.findUnique({
+      where: {
+        id: linkId,
+        userId: session.user.id,
+      },
+      include: {
+        linkTags: {
+          include: {
+            tag: true,
+          },
+        },
+        visits: {
+          orderBy: { visitedAt: 'desc' },
+          take: 10,
+        },
+      },
+    })
+
+    if (!link) {
+      return { success: false, error: 'Link not found' }
+    }
+
+    return { success: true, link }
+  } catch (error) {
+    console.error('Error fetching link:', error)
+    return { success: false, error: 'Failed to fetch link' }
   }
 }
 

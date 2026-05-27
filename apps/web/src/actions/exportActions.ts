@@ -8,7 +8,7 @@ export async function exportData() {
   const session = await getServerSession(authOptions)
   
   if (!session || !session.user) {
-    throw new Error('User not authenticated')
+    return { success: false, error: 'User not authenticated', data: null }
   }
 
   try {
@@ -57,11 +57,43 @@ export async function exportData() {
   }
 }
 
-export async function importData(data: any) {
+interface ImportData {
+  version?: string
+  links?: Array<{
+    url: string
+    normalizedUrl?: string
+    domain?: string
+    title?: string
+    description?: string
+    note?: string
+    ogImage?: string
+    favicon?: string
+    siteName?: string
+    publishedTime?: string
+    status?: string
+    favorite?: boolean
+    collectionId?: string
+    metadataStatus?: string
+    metadataError?: string
+    createdAt?: string
+    updatedAt?: string
+    lastVisitedAt?: string
+    linkTags?: Array<{ tag?: { name: string; color?: string } }>
+    tags?: Array<{ name: string; color?: string }>
+  }>
+  tags?: Array<{ name: string; color?: string }>
+  collections?: Array<{ name: string; color?: string }>
+}
+
+export async function importData(data: ImportData) {
   const session = await getServerSession(authOptions)
   
   if (!session || !session.user) {
-    throw new Error('User not authenticated')
+    return { success: false, error: 'User not authenticated' }
+  }
+
+  if (!data || typeof data !== 'object') {
+    return { success: false, error: 'Invalid import data format' }
   }
 
   try {
@@ -119,8 +151,8 @@ export async function importData(data: any) {
             data: {
               userId: session.user.id,
               url: link.url,
-              normalizedUrl: link.normalizedUrl,
-              domain: link.domain,
+              normalizedUrl: link.normalizedUrl || link.url,
+              domain: link.domain || new URL(link.url).hostname,
               title: link.title,
               description: link.description,
               note: link.note,
@@ -140,8 +172,10 @@ export async function importData(data: any) {
           })
 
           // Associate tags
-          for (const tag of link.tags || []) {
+          for (const linkTag of link.linkTags || []) {
             try {
+              const tag = linkTag.tag
+              if (!tag) continue
               const existingTag = await prisma.tag.findFirst({
                 where: {
                   userId: session.user.id,
