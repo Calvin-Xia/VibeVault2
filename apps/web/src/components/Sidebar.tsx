@@ -3,13 +3,15 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { Inbox, BookOpen, CheckCircle, Folder, Plus } from 'lucide-react'
 import { listTags, createTag } from '@/actions/tagActions'
 
 interface SidebarProps {
   statusCounts?: { inbox: number; reading: number; archived: number }
+  onClose?: () => void
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ statusCounts }) => {
+const Sidebar: React.FC<SidebarProps> = ({ statusCounts, onClose }) => {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [tags, setTags] = useState<Array<{ id: string; name: string; color: string | null; count: number }>>([])
@@ -19,12 +21,12 @@ const Sidebar: React.FC<SidebarProps> = ({ statusCounts }) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const statusFilters = [
-    { id: 'inbox', name: '未处理', count: statusCounts?.inbox ?? 0, icon: '📥' },
-    { id: 'reading', name: '正在处理', count: statusCounts?.reading ?? 0, icon: '📝' },
-    { id: 'archived', name: '已完成', count: statusCounts?.archived ?? 0, icon: '✅' },
+    { id: 'inbox', name: '未处理', count: statusCounts?.inbox ?? 0, icon: Inbox },
+    { id: 'reading', name: '正在处理', count: statusCounts?.reading ?? 0, icon: BookOpen },
+    { id: 'archived', name: '已完成', count: statusCounts?.archived ?? 0, icon: CheckCircle },
   ]
 
-  // Fetch tags on component mount and when pathname changes
+  // Fetch tags on component mount
   useEffect(() => {
     const fetchTags = async () => {
       const fetchedTags = await listTags()
@@ -35,7 +37,7 @@ const Sidebar: React.FC<SidebarProps> = ({ statusCounts }) => {
       })))
     }
     fetchTags()
-  }, [pathname])
+  }, [])
 
   const handleCreateTag = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,9 +69,10 @@ const Sidebar: React.FC<SidebarProps> = ({ statusCounts }) => {
               <Link
                 key={status.id}
                 href={`/app?status=${status.id}`}
+                onClick={() => onClose?.()}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 ${pathname === '/app' && searchParams.get('status') === status.id ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}
               >
-                <span>{status.icon}</span>
+                <status.icon className="h-4 w-4" />
                 <span>{status.name}</span>
                 {status.count > 0 && (
                   <span className="ml-auto text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full">{status.count}</span>
@@ -86,9 +89,10 @@ const Sidebar: React.FC<SidebarProps> = ({ statusCounts }) => {
             {/* Collection items will be populated from API */}
             <Link
               href="/app"
+              onClick={() => onClose?.()}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 ${pathname === '/app' && !searchParams.get('collection') ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}
             >
-              <span>📁</span>
+              <Folder className="h-4 w-4" />
               <span>所有链接</span>
             </Link>
           </div>
@@ -102,6 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({ statusCounts }) => {
               <Link
                 key={tag.id}
                 href={`/app?tag=${tag.id}`}
+                onClick={() => onClose?.()}
                 className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${pathname === '/app' && searchParams.get('tag') === tag.id ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : `bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300`}`}
                 style={{ backgroundColor: `${tag.color || '#8b5cf6'}20`, color: tag.color || '#8b5cf6' }}
               >
@@ -151,7 +156,7 @@ const Sidebar: React.FC<SidebarProps> = ({ statusCounts }) => {
               className="mt-3 flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
               onClick={() => setShowAddTagForm(true)}
             >
-              <span>➕</span>
+              <Plus className="h-3.5 w-3.5" />
               <span>添加标签</span>
             </button>
           )}

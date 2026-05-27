@@ -17,6 +17,7 @@ import ReactFlow, {
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { listLinks } from '@/actions/linkActions'
+import { LayoutGrid, GitBranch } from 'lucide-react'
 
 interface GraphNodeData {
   label: string
@@ -228,24 +229,26 @@ function GraphView() {
       <div className="glass rounded-2xl p-6">
         {/* View options tab */}
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+          <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
             <button
-              className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors text-muted-foreground hover:bg-accent"
               onClick={() => router.push('/app')}
+              aria-label="切换到瀑布流视图"
             >
-              <span>🖼️</span>
+              <LayoutGrid className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">瀑布流</span>
             </button>
             <button
-              className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-sm"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-card text-foreground shadow-sm"
               disabled
+              aria-label="知识图谱视图（当前）"
             >
-              <span>🔗</span>
+              <GitBranch className="h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">知识图谱</span>
             </button>
           </div>
           <button
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity text-sm font-medium"
             onClick={generateGraphData}
             disabled={isLoading}
           >
@@ -254,7 +257,7 @@ function GraphView() {
         </div>
         <div 
           ref={reactFlowWrapper} 
-          className="h-[600px] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-lg relative"
+          className="h-[600px] bg-gradient-to-br from-muted to-accent rounded-lg relative"
           style={{ width: '100%' }}
         >
           <ReactFlow
@@ -269,17 +272,21 @@ function GraphView() {
             maxZoom={3}
             selectionOnDrag={false}
             onNodeClick={handleNodeClick}
+            aria-label="知识图谱"
+            nodesFocusable={true}
+            edgesFocusable={true}
+            disableKeyboardA11y={false}
           >
             <Background 
               variant={BackgroundVariant.Dots} 
               gap={20} 
               size={2} 
-              color="#94a3b8"
+              color="hsl(var(--muted-foreground))"
               style={{ opacity: 0.5 }}
             />
             <Controls 
               style={{ 
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                backgroundColor: 'hsl(var(--card) / 0.9)',
                 borderRadius: '8px',
                 boxShadow: '0 2px 10px rgba(0, 0, 0, 0.15)',
                 padding: '5px',
@@ -290,24 +297,29 @@ function GraphView() {
               zoomable
               pannable
               style={{ 
-                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                backgroundColor: 'hsl(var(--card) / 0.95)',
                 borderRadius: '8px',
                 boxShadow: '0 2px 10px rgba(0, 0, 0, 0.15)',
               }}
               nodeColor={(node) => {
                 if (node.id.startsWith('tag-')) {
-                  return '#8b5cf6' // Purple for tags
+                  return 'hsl(263 70% 68%)' // Purple for tags
                 }
-                return '#3b82f6' // Blue for links
+                return 'hsl(217 91% 60%)' // Blue for links
               }}
             />
           </ReactFlow>
         </div>
+        <div className="mt-2 text-center">
+          <p className="text-muted-foreground text-sm">
+            提示: 使用 Tab 键聚焦节点，Enter 键选择，方向键移动
+          </p>
+        </div>
         {nodes.length === 0 && !isLoading && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-            <div className="text-6xl mb-4">🔗</div>
+            <GitBranch className="h-16 w-16 mx-auto mb-4 text-muted-foreground" aria-hidden="true" />
             <h2 className="text-xl font-medium mb-2">知识图谱视图</h2>
-            <p className="text-gray-500 dark:text-gray-400">
+            <p className="text-muted-foreground">
               点击&quot;加载图谱&quot;按钮生成知识图谱，将展示标签与链接之间的关系。
             </p>
           </div>

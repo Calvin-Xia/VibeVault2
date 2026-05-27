@@ -3,9 +3,24 @@
 import { useParams, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import { toast } from 'sonner'
+import {
+  ArrowLeft,
+  Archive,
+  ArchiveRestore,
+  ExternalLink,
+  Pencil,
+  Star,
+  StarOff,
+  Tag,
+  Trash2,
+} from 'lucide-react'
 import { getLink, updateLink, deleteLink, addTagToLink, removeTagFromLink } from '@/actions/linkActions'
 import { listTags } from '@/actions/tagActions'
-import { Link, Tag, LinkStatus } from '@/types/link'
+import { Link, Tag as TagType, LinkStatus } from '@/types/link'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import TagManager from '@/components/ui/TagManager'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 function LinkDetail() {
   const params = useParams()
@@ -22,7 +37,7 @@ function LinkDetail() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [availableTags, setAvailableTags] = useState<Tag[]>([])
+  const [availableTags, setAvailableTags] = useState<TagType[]>([])
   const [showTagManager, setShowTagManager] = useState(false)
   const [isLoadingTags, setIsLoadingTags] = useState(false)
 
@@ -55,9 +70,12 @@ function LinkDetail() {
       if (result.success && result.link) {
         setLink(result.link as unknown as Link)
         setIsEditing(false)
+        toast.success('已保存')
+      } else {
+        toast.error('保存失败')
       }
     } catch {
-      console.error('Error updating link')
+      toast.error('保存失败，请重试')
     } finally {
       setIsSubmitting(false)
     }
@@ -69,9 +87,12 @@ function LinkDetail() {
       const result = await updateLink(link.id, { favorite: !link.favorite })
       if (result.success && result.link) {
         setLink(result.link as unknown as Link)
+        toast.success(link.favorite ? '已取消收藏' : '已收藏')
+      } else {
+        toast.error('操作失败')
       }
     } catch {
-      console.error('Error toggling favorite')
+      toast.error('操作失败，请重试')
     }
   }
 
@@ -81,9 +102,12 @@ function LinkDetail() {
       const result = await updateLink(link.id, { status })
       if (result.success && result.link) {
         setLink(result.link as unknown as Link)
+        toast.success(status === 'ARCHIVED' ? '已归档' : '已取消归档')
+      } else {
+        toast.error('操作失败')
       }
     } catch {
-      console.error('Error updating status')
+      toast.error('操作失败，请重试')
     }
   }
 
@@ -93,10 +117,13 @@ function LinkDetail() {
     try {
       const result = await deleteLink(link.id)
       if (result.success) {
+        toast.success('已删除')
         router.push('/app')
+      } else {
+        toast.error('删除失败')
       }
     } catch {
-      console.error('Error deleting link')
+      toast.error('删除失败，请重试')
     } finally {
       setIsDeleting(false)
       setShowDeleteConfirm(false)
@@ -110,7 +137,7 @@ function LinkDetail() {
       setAvailableTags(fetchedTags)
       setShowTagManager(true)
     } catch {
-      console.error('Error fetching tags')
+      toast.error('加载标签失败')
     } finally {
       setIsLoadingTags(false)
     }
@@ -128,9 +155,12 @@ function LinkDetail() {
       const result = await getLink(id)
       if (result.success && result.link) {
         setLink(result.link as unknown as Link)
+        toast.success(isTagAssigned ? '已移除标签' : '已添加标签')
+      } else {
+        toast.error('标签操作失败')
       }
     } catch {
-      console.error('Error toggling tag')
+      toast.error('标签操作失败，请重试')
     }
   }
 
@@ -138,7 +168,35 @@ function LinkDetail() {
     return (
       <div className="p-6">
         <div className="glass rounded-2xl p-6">
-          <div className="text-center py-12 text-gray-500 dark:text-gray-400">加载中...</div>
+          <div className="flex items-center gap-2 mb-6">
+            <Skeleton className="h-4 w-16" />
+          </div>
+          <Skeleton className="h-64 w-full rounded-xl mb-6" />
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-3/4" />
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-6 w-6 rounded" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-5 w-16 rounded-full" />
+            </div>
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+            <div className="flex gap-2 mt-4">
+              <Skeleton className="h-6 w-16 rounded-full" />
+              <Skeleton className="h-6 w-20 rounded-full" />
+              <Skeleton className="h-6 w-14 rounded-full" />
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-6">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+            <div className="flex gap-3 mt-6">
+              <Skeleton className="h-10 w-20 rounded-lg" />
+              <Skeleton className="h-10 w-20 rounded-lg" />
+              <Skeleton className="h-10 w-24 rounded-lg" />
+              <Skeleton className="h-10 w-20 rounded-lg" />
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -149,12 +207,12 @@ function LinkDetail() {
       <div className="p-6">
         <div className="glass rounded-2xl p-6">
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">🔗</div>
+            <ExternalLink className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
             <h2 className="text-xl font-medium mb-2">链接未找到</h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">{error || '该链接不存在或已被删除'}</p>
+            <p className="text-muted-foreground mb-4">{error || '该链接不存在或已被删除'}</p>
             <button
               onClick={() => router.push('/app')}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
             >
               返回首页
             </button>
@@ -166,51 +224,31 @@ function LinkDetail() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      {/* Delete Confirmation Dialog */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-sm w-full">
-            <div className="text-center mb-4">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full mb-3">
-                <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">确认删除</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">您确定要删除这个链接吗？此操作无法撤销。</p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              >
-                取消
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isDeleting ? '删除中...' : '删除'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="确认删除"
+        description="您确定要删除这个链接吗？此操作无法撤销。"
+        confirmLabel="删除"
+        cancelLabel="取消"
+        onConfirm={handleDelete}
+        isConfirming={isDeleting}
+        variant="danger"
+      />
 
       {/* Back button */}
       <button
         onClick={() => router.push('/app')}
-        className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 mb-4 transition-colors"
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
       >
-        <span>←</span>
+        <ArrowLeft className="w-4 h-4" />
         <span>返回列表</span>
       </button>
 
       <div className="glass rounded-2xl overflow-hidden">
         {/* Hero image */}
         {link.ogImage && (
-          <div className="relative h-64 bg-gray-100 dark:bg-gray-800">
+          <div className="relative h-64 bg-muted">
             <Image
               src={link.ogImage}
               alt={link.title}
@@ -235,7 +273,7 @@ function LinkDetail() {
                     className="rounded"
                   />
                 )}
-                <span className="text-sm text-gray-500 dark:text-gray-400">{link.domain}</span>
+                <span className="text-sm text-muted-foreground">{link.domain}</span>
                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                   link.status === 'INBOX' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
                   link.status === 'READING' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
@@ -247,7 +285,7 @@ function LinkDetail() {
               {isEditing ? (
                 <input
                   type="text"
-                  className="w-full text-2xl font-semibold bg-transparent border-b border-gray-200 dark:border-gray-700 focus:outline-none pb-1"
+                  className="w-full text-2xl font-semibold bg-transparent border-b border-border focus:outline-none pb-1"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                 />
@@ -257,9 +295,9 @@ function LinkDetail() {
             </div>
             <button
               onClick={handleFavorite}
-              className={`p-2 rounded-full transition-colors ${link.favorite ? 'text-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-900/30' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              className={`p-2 rounded-full transition-colors ${link.favorite ? 'text-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-900/30' : 'text-muted-foreground hover:bg-muted'}`}
             >
-              {link.favorite ? '⭐' : '☆'}
+              {link.favorite ? <Star className="w-5 h-5 fill-current" /> : <StarOff className="w-5 h-5" />}
             </button>
           </div>
 
@@ -268,8 +306,9 @@ function LinkDetail() {
             href={link.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 dark:text-blue-400 hover:underline break-all text-sm mb-4 inline-block"
+            className="text-primary hover:underline break-all text-sm mb-4 inline-flex items-center gap-1"
           >
+            <ExternalLink className="w-3.5 h-3.5" />
             {link.url}
           </a>
 
@@ -278,14 +317,14 @@ function LinkDetail() {
             {isEditing ? (
               <>
                 <textarea
-                  className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none"
+                  className="w-full px-3 py-2 text-sm bg-muted border border-border rounded-lg focus:outline-none"
                   rows={3}
                   placeholder="描述"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
                 <textarea
-                  className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none"
+                  className="w-full px-3 py-2 text-sm bg-muted border border-border rounded-lg focus:outline-none"
                   rows={4}
                   placeholder="备注"
                   value={note}
@@ -296,14 +335,14 @@ function LinkDetail() {
               <>
                 {link.description && (
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">描述</h3>
-                    <p className="text-gray-700 dark:text-gray-300">{link.description}</p>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">描述</h3>
+                    <p className="text-foreground">{link.description}</p>
                   </div>
                 )}
                 {link.note && (
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">备注</h3>
-                    <p className="text-gray-700 dark:text-gray-300 italic">{link.note}</p>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">备注</h3>
+                    <p className="text-foreground italic">{link.note}</p>
                   </div>
                 )}
               </>
@@ -312,7 +351,7 @@ function LinkDetail() {
 
           {/* Tags */}
           <div className="mt-4">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">标签</h3>
+            <h3 className="text-sm font-medium text-muted-foreground mb-2">标签</h3>
             <div className="flex flex-wrap gap-2">
               {link.linkTags.length > 0 ? (
                 link.linkTags.map(({ tag }) => (
@@ -325,73 +364,49 @@ function LinkDetail() {
                   </span>
                 ))
               ) : (
-                <span className="text-sm text-gray-400">暂无标签</span>
+                <span className="text-sm text-muted-foreground">暂无标签</span>
               )}
               <button
                 onClick={handleLoadTags}
-                className="px-3 py-1 rounded-full text-sm font-medium text-gray-500 dark:text-gray-400 border border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-500 hover:text-blue-500 transition-colors"
+                className="px-3 py-1 rounded-full text-sm font-medium text-muted-foreground border border-dashed border-border hover:border-primary hover:text-primary transition-colors inline-flex items-center gap-1"
               >
-                + 管理标签
+                <Tag className="w-3.5 h-3.5" />
+                管理标签
               </button>
             </div>
 
-            {/* Tag Manager */}
             {showTagManager && (
-              <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <h4 className="text-sm font-medium mb-2">选择标签</h4>
-                {isLoadingTags ? (
-                  <div className="text-center py-2 text-gray-500">加载中...</div>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {availableTags.map((tag) => {
-                      const isAssigned = link.linkTags.some(({ tag: t }) => t.id === tag.id)
-                      return (
-                        <button
-                          key={tag.id}
-                          className="px-2 py-1 rounded-full text-xs font-medium cursor-pointer transition-opacity"
-                          style={{
-                            backgroundColor: isAssigned ? (tag.color || '#8b5cf6') : `${tag.color || '#8b5cf6'}20`,
-                            color: isAssigned ? 'white' : (tag.color || '#8b5cf6'),
-                          }}
-                          onClick={() => handleTagToggle(tag.id)}
-                        >
-                          {tag.name}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-                <button
-                  className="mt-2 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                  onClick={() => setShowTagManager(false)}
-                >
-                  关闭
-                </button>
-              </div>
+              <TagManager
+                availableTags={availableTags}
+                assignedTagIds={link.linkTags.map(({ tag }) => tag.id)}
+                isLoading={isLoadingTags}
+                onToggle={handleTagToggle}
+                onClose={() => setShowTagManager(false)}
+              />
             )}
           </div>
 
           {/* Metadata */}
-          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">信息</h3>
+          <div className="mt-6 pt-4 border-t border-border">
+            <h3 className="text-sm font-medium text-muted-foreground mb-3">信息</h3>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <span className="text-gray-500 dark:text-gray-400">创建时间</span>
-                <p className="text-gray-700 dark:text-gray-300">{new Date(link.createdAt).toLocaleString()}</p>
+                <span className="text-muted-foreground">创建时间</span>
+                <p className="text-foreground">{new Date(link.createdAt).toLocaleString()}</p>
               </div>
               <div>
-                <span className="text-gray-500 dark:text-gray-400">更新时间</span>
-                <p className="text-gray-700 dark:text-gray-300">{new Date(link.updatedAt).toLocaleString()}</p>
+                <span className="text-muted-foreground">更新时间</span>
+                <p className="text-foreground">{new Date(link.updatedAt).toLocaleString()}</p>
               </div>
               {link.lastVisitedAt && (
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400">最后访问</span>
-                  <p className="text-gray-700 dark:text-gray-300">{new Date(link.lastVisitedAt).toLocaleString()}</p>
+                  <span className="text-muted-foreground">最后访问</span>
+                  <p className="text-foreground">{new Date(link.lastVisitedAt).toLocaleString()}</p>
                 </div>
               )}
               <div>
-                <span className="text-gray-500 dark:text-gray-400">元数据状态</span>
-                <p className="text-gray-700 dark:text-gray-300">
+                <span className="text-muted-foreground">元数据状态</span>
+                <p className="text-foreground">
                   {link.metadataStatus === 'READY' ? '已就绪' : link.metadataStatus === 'PENDING' ? '等待中' : '失败'}
                 </p>
               </div>
@@ -399,13 +414,13 @@ function LinkDetail() {
           </div>
 
           {/* Actions */}
-          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-3">
+          <div className="mt-6 pt-4 border-t border-border flex flex-wrap gap-3">
             {isEditing ? (
               <>
                 <button
                   onClick={handleSave}
                   disabled={isSubmitting}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
                 >
                   {isSubmitting ? '保存中...' : '保存'}
                 </button>
@@ -416,7 +431,7 @@ function LinkDetail() {
                     setDescription(link.description || '')
                     setNote(link.note || '')
                   }}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors"
                 >
                   取消
                 </button>
@@ -425,29 +440,42 @@ function LinkDetail() {
               <>
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors inline-flex items-center gap-2"
                 >
-                  ✏️ 编辑
+                  <Pencil className="w-4 h-4" />
+                  编辑
                 </button>
                 <button
                   onClick={() => handleStatusChange(link.status === 'ARCHIVED' ? 'INBOX' : 'ARCHIVED')}
-                  className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors inline-flex items-center gap-2"
                 >
-                  {link.status === 'ARCHIVED' ? '📥 取消归档' : '📦 归档'}
+                  {link.status === 'ARCHIVED' ? (
+                    <>
+                      <ArchiveRestore className="w-4 h-4" />
+                      取消归档
+                    </>
+                  ) : (
+                    <>
+                      <Archive className="w-4 h-4" />
+                      归档
+                    </>
+                  )}
                 </button>
                 <a
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
                 >
-                  🔗 打开链接
+                  <ExternalLink className="w-4 h-4" />
+                  打开链接
                 </a>
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors ml-auto"
+                  className="px-4 py-2 bg-destructive/10 text-destructive rounded-lg hover:bg-destructive/20 transition-colors ml-auto inline-flex items-center gap-2"
                 >
-                  🗑️ 删除
+                  <Trash2 className="w-4 h-4" />
+                  删除
                 </button>
               </>
             )}
