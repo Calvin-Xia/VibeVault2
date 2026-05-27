@@ -15,15 +15,11 @@ import ReactFlow, {
 import 'reactflow/dist/style.css'
 import { listLinks } from '@/actions/linkActions'
 
-// Custom node types (optional, for now we'll use default nodes)
-const nodeTypes = {}
-
 function GraphView() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
-  const [reactFlowInstance, setReactFlowInstance] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   // Handle node click to open link
@@ -38,10 +34,8 @@ function GraphView() {
   const generateGraphData = useCallback(async () => {
     setIsLoading(true)
     try {
-      console.log('Generating graph data...')
       const result = await listLinks({ limit: 100 })
       const { links: fetchedLinks } = result
-      console.log('Fetched links:', fetchedLinks.length)
       
       // Create nodes and edges
       const newNodes: Node[] = []
@@ -188,23 +182,7 @@ function GraphView() {
             id: `edge-${idCounter++}`,
             source: tagNodeId,
             target: nodeId,
-            type: 'bezier', // Use bezier curve for more natural flow
-            style: {
-              stroke: tag.color || '#8b5cf6',
-              strokeWidth: 3,
-              opacity: 0.8,
-              strokeLinecap: 'round',
-              strokeDasharray: '', // Solid line for better visibility
-            },
-            animated: true,
-            // Configure bezier curve options for smoother flow
-            markerEnd: {
-              type: 'arrow',
-              width: 14,
-              height: 14,
-              color: tag.color || '#8b5cf6',
-            },
-            // Adjust control points for more natural curve
+            type: 'bezier',
             style: {
               stroke: tag.color || '#8b5cf6',
               strokeWidth: 3,
@@ -212,12 +190,16 @@ function GraphView() {
               strokeLinecap: 'round',
               strokeDasharray: '',
             },
+            animated: true,
+            markerEnd: {
+              type: 'arrow',
+              width: 14,
+              height: 14,
+              color: tag.color || '#8b5cf6',
+            },
           })
         })
       })
-      
-      console.log('Created nodes:', newNodes.length)
-      console.log('Created edges:', newEdges.length)
       
       setNodes(newNodes)
       setEdges(newEdges)
@@ -273,8 +255,8 @@ function GraphView() {
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
-            onInit={setReactFlowInstance}
-            nodeTypes={nodeTypes}
+            onInit={() => {}}
+            nodeTypes={{}}
             fitView
             minZoom={0.1}
             maxZoom={3}
