@@ -2,7 +2,7 @@
 
 import crypto from 'crypto'
 import { prisma } from '@vibevault/db'
-import resend from '@/lib/resend'
+import { getResend } from '@/lib/resend'
 import { hashCode } from '@/lib/otp'
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
@@ -68,7 +68,7 @@ export async function sendOtp(email: string): Promise<{ success: boolean; error?
   const fromAddress = process.env.EMAIL_FROM || 'onboarding@resend.dev'
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: fromAddress,
       to: email,
       subject: 'VibeVault - 验证码',

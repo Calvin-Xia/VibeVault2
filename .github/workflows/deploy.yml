@@ -27,6 +27,13 @@ jobs:
         run: pnpm -F @vibevault/db generate
       - name: Build (OpenNext)
         run: pnpm run build
+        env:
+          DATABASE_URL: file:./dev.db
+          DATABASE_PROVIDER: sqlite
+          NEXTAUTH_URL: https://vibevault.pages.dev
+          NEXTAUTH_SECRET: build-placeholder-secret
+          RESEND_API_KEY: build-placeholder-key
+          EMAIL_FROM: test@example.com
       - name: Set secrets
         working-directory: apps/web
         env:
