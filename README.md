@@ -4,14 +4,13 @@
 
 ## 技术栈
 
-- **Monorepo**: pnpm workspace
-- **Web**: Next.js (App Router) + TypeScript
-- **UI**: TailwindCSS + Framer Motion
-- **数据层**: Prisma ORM
-- **数据库**: SQLite (开发环境) / PostgreSQL (生产环境)
-- **认证**: NextAuth (OTP 邮箱验证码)
+- **Monorepo**: pnpm workspace (pnpm@10.26.1 锁定)
+- **Web**: Next.js 15 (App Router) + TypeScript strict
+- **UI**: TailwindCSS + Framer Motion + @tanstack/react-virtual
+- **数据层**: Prisma ORM — 本地 SQLite / 生产 **Cloudflare D1** (@prisma/adapter-d1)
+- **认证**: NextAuth v4 (OTP 邮箱验证码, JWT 会话)
 - **邮件**: Resend
-- **部署**: Cloudflare Workers (via OpenNext)
+- **部署**: GitHub Actions CI + **Cloudflare Workers (via OpenNext)** — main 自动部署
 
 ## 项目结构
 
@@ -19,36 +18,32 @@
 VibeVault/
 ├── apps/
 │   └── web/                # Next.js 应用
+│       ├── open-next.config.ts  # OpenNext Cloudflare 配置
+│       ├── wrangler.jsonc       # Worker 配置 (D1 binding / vars;database_id 需回填)
+│       ├── d1/schema.sql        # D1 初始 DDL(一次性执行)
 │       ├── src/
 │       │   ├── actions/     # Server Actions
-│       │   │   ├── exportActions.ts   # 导入导出功能
-│       │   │   ├── linkActions.ts      # 链接相关操作
-│       │   │   └── tagActions.ts       # 标签相关操作
+│       │   │   ├── linkActions.ts      # 链接相关操作(含元数据抓取/重试)
+│       │   │   ├── tagActions.ts       # 标签相关操作
+│       │   │   ├── exportActions.ts    # 导入导出功能
+│       │   │   └── otpActions.ts       # 邮件验证码 (OTP)
+│       │   ├── middleware.ts # 路由级认证 (/app/:path*)
+│       │   ├── lib/         # auth/resend/metadata/url/otp (+ 单测)
 │       │   ├── app/         # App Router 页面
-│       │   │   ├── api/      # API 路由
-│       │   │   ├── app/      # 应用主页面
-│       │   │   │   ├── graph/       # 知识图谱页面
-│       │   │   │   ├── link/        # 链接详情页
-│       │   │   │   ├── settings/    # 设置页面
-│       │   │   │   └── page.tsx     # 瀑布流列表页
-│       │   │   ├── globals.css      # 全局样式
-│       │   │   ├── layout.tsx        # 根布局
-│       │   │   └── page.tsx          # 登录页面
-│       │   ├── components/   # React 组件
-│       │   │   ├── AppShell.tsx           # 应用外壳
-│       │   │   ├── FilterBar.tsx          # 筛选栏
-│       │   │   ├── LinkCard.tsx           # 链接卡片
-│       │   │   ├── LinkGridMasonry.tsx    # 瀑布流布局
-│       │   │   ├── Providers.tsx          # 提供者组件
-│       │   │   └── Sidebar.tsx            # 侧边栏
-│       │   └── lib/          # 工具库
-│       │       └── auth.ts           # 认证配置
-│       ├── .env              # 环境变量
-│       └── .env.example       # 环境变量示例
+│       │   │   ├── api/      # API 路由 (仅 NextAuth handler)
+│       │   │   └── app/      # 应用主页面
+│       │   │       ├── graph/       # 知识图谱页面
+│       │   │       ├── link/        # 链接详情页
+│       │   │       ├── settings/    # 设置页面
+│       │   │       └── page.tsx     # 瀑布流列表页
+│       │   ├── components/   # React 组件 (含 ui/ 基础组件)
+│       │   └── types/        # 类型定义
+│       ├── .env.example     # 环境变量示例
 ├── packages/
 │   └── db/                 # Prisma schema + client
 │       ├── prisma/         # Prisma schema
-│       └── src/            # 数据库工具函数
+│       └── src/            # 数据库客户端 (D1 adapter / SQLite 双模式)
+├── .github/workflows/      # CI (build.yml) + Cloudflare 部署 (deploy.yml)
 ├── pnpm-workspace.yaml      # pnpm 工作区配置
 └── README.md                # 项目说明
 ```
@@ -58,6 +53,8 @@ VibeVault/
 ### 收藏
 - ✅ 输入 URL 保存为 Link
 - ✅ 立即在列表中出现（optimistic UI）
+- ✅ 自动抓取元数据 (og:title/描述/图片/favicon/siteName,SSRF 防护)
+- ✅ 抓取失败可手动重试 (详情页)
 - ✅ 支持手动编辑标题和备注
 - ✅ 支持添加多个标签
 - ✅ 支持在添加链接时直接选择标签
@@ -85,8 +82,10 @@ VibeVault/
 - ✅ 导入/导出状态反馈
 
 ### 认证
-- ✅ 基于邮箱的简化登录（无需密码）
-- ✅ 会话管理
+- ✅ OTP 邮箱验证码登录(发送验证码邮件,无需密码)
+- ✅ 会话管理 (JWT)
+- ✅ 路由级保护 (middleware)
+- ✅ 首次登录自动创建用户
 
 ## 快速开始
 
@@ -124,30 +123,18 @@ pnpm dev
 # NextAuth 配置
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-secret-key
+OTP_PEPPER=your-random-pepper   # OTP 哈希 pepper(生产必填)
 
 # 数据库配置
-DATABASE_URL="file:./dev.db"
+DATABASE_PROVIDER=sqlite
+DATABASE_URL=file:./dev.db
+
+# Resend 邮件(OTP 验证码)
+RESEND_API_KEY=your_resend_api_key
+EMAIL_FROM=onboarding@resend.dev
 ```
 
-### NPM 配置方式
-
-如果使用 npm 替代 pnpm，可以按照以下步骤操作：
-
-```bash
-# 安装依赖
-npm install
-
-# 生成 Prisma Client
-cd packages/db
-npm run generate
-
-# 运行数据库迁移
-npm run push
-
-# 运行开发服务器
-cd ../apps/web
-npm run dev
-```
+> 注意:本项目锁定 pnpm (root `packageManager: pnpm@10.26.1`),请使用 pnpm 而非 npm 安装依赖。
 
 ## 开发流程
 
@@ -163,13 +150,13 @@ npm run dev
 ### Milestone 2: 收藏与列表 ✅
 - ✅ 实现 Server Actions
 - ✅ 实现 LinkCard 组件
-- ✅ 实现 LinkGridMasonry 组件
+- ✅ 实现 LinkGridVirtual 组件(虚拟滚动瀑布流)
 - ✅ 实现添加链接表单
 - ✅ 实现删除链接功能
 - ✅ 实现标签选择功能
 
 ### Milestone 3: 知识图谱 ✅
-- ✅ 实现 GraphView 组件
+- ✅ 实现知识图谱页面 (ReactFlow)
 - ✅ 实现图谱交互
 - ✅ 实现图谱布局
 - ✅ 优化曲线样式
@@ -239,23 +226,35 @@ npm run dev
 - 标签展示
 - 操作按钮（收藏、编辑、删除、归档）
 
-### LinkGridMasonry
-瀑布流布局组件，展示链接卡片
+### LinkGridVirtual
+虚拟滚动瀑布流布局组件，展示链接卡片，支持 Fuse.js 模糊搜索
 
-### GraphView
-知识图谱组件，展示标签和链接的关系
+### PageTransition
+页面切换过渡动画组件 (Framer Motion)
+
+### ui/ 基础组件
+- ConfirmDialog: 确认对话框
+- EmptyState: 空状态占位
+- MobileSheet: 移动端抽屉
+- Skeleton: 加载骨架屏
+- TagManager: 标签管理
+
+### 知识图谱页面
+`/app/graph` 页面内实现的图谱视图 (ReactFlow)，展示标签和链接的关系
 
 ## API 说明
 
 ### Server Actions
 
 #### 链接相关
-- `createLink`: 创建链接
+- `createLink`: 创建链接(创建后自动抓取元数据)
 - `listLinks`: 列出链接
+- `getLink`: 获取单个链接
 - `updateLink`: 更新链接
 - `deleteLink`: 删除链接
 - `addTagToLink`: 给链接添加标签
 - `removeTagFromLink`: 从链接移除标签
+- `retryLinkMetadata`: 重试元数据抓取
 
 #### 标签相关
 - `listTags`: 列出标签
@@ -266,6 +265,10 @@ npm run dev
 #### 导入导出
 - `exportData`: 导出数据
 - `importData`: 导入数据
+
+#### 认证相关
+- `sendOtp`: 发送邮箱验证码 (Resend)
+- `verifyOtp`: 校验验证码
 
 ## 数据库模型
 
@@ -281,7 +284,7 @@ npm run dev
 - id: 主键
 - userId: 所属用户 ID
 - url: 原始 URL
-- normalizedUrl: 标准化 URL
+- normalizedUrl: 标准化 URL (唯一约束: userId + url)
 - domain: 域名
 - title: 标题
 - description: 描述
@@ -289,12 +292,14 @@ npm run dev
 - ogImage: Open Graph 图片
 - favicon: 网站图标
 - siteName: 网站名称
+- publishedTime: 发布时间
 - createdAt: 创建时间
 - updatedAt: 更新时间
 - lastVisitedAt: 最后访问时间
-- status: 状态（INBOX, READING, ARCHIVED）
+- collectionId: 所属集合 ID
+- status: 状态 (INBOX, READING, ARCHIVED)
 - favorite: 是否收藏
-- metadataStatus: 元数据抓取状态
+- metadataStatus: 元数据抓取状态 (PENDING, READY, FAILED)
 - metadataError: 元数据抓取错误
 
 ### Tag
@@ -308,21 +313,70 @@ npm run dev
 - linkId: 链接 ID
 - tagId: 标签 ID
 
+### Collection
+- id: 主键
+- userId: 所属用户 ID
+- name: 集合名称
+- color: 颜色
+- createdAt / updatedAt
+
+### LinkVisit
+- id: 主键
+- linkId: 链接 ID
+- visitedAt: 访问时间
+
+### Job
+- id: 主键
+- userId: 所属用户 ID
+- type: 任务类型
+- payload: 任务数据 (JSON 字符串)
+- status: 状态 (QUEUED 等)
+- error / attempts / createdAt / updatedAt
+
+### OTPVerification
+- id: 主键
+- email: 邮箱
+- codeHash: 验证码哈希
+- expiresAt: 过期时间
+- attempts: 尝试次数
+- createdAt
+
 ## 部署说明
 
-### Cloudflare Workers
-1. 配置环境变量
-2. 运行 `pnpm run build`
-3. 使用 `wrangler deploy` 部署
+### Cloudflare Workers (via OpenNext)
+
+生产部署到 Cloudflare Workers + D1。首次部署需要一次人工准备:
+
+```bash
+# 1. 创建 D1 数据库,并把返回的 database_id 填入 apps/web/wrangler.jsonc
+cd apps/web
+pnpm exec wrangler d1 create vibevault
+
+# 2. 初始化 D1 schema(一次性;SQL 由 prisma migrate diff 生成)
+pnpm exec wrangler d1 execute vibevault --remote --file=./d1/schema.sql
+
+# 3. 部署(需要本地 CF token 或 CI)
+pnpm run build          # OpenNext 构建
+pnpm exec wrangler deploy
+```
+
+### GitHub Actions
+- `build.yml`:推送 main 或 PR 时执行 install → prisma generate → lint → **test (Vitest)** → OpenNext build
+- `deploy.yml`:推送 main 时自动构建并 `wrangler deploy`(需在仓库 Secrets 配置 `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`、`NEXTAUTH_SECRET`、`RESEND_API_KEY`)
+
+> 说明:GitHub Pages 静态导出已移除 —— NextAuth 的 API 路由无法静态导出,演示站点由 Workers 生产 URL 承担。
 
 ## 开发说明
 
 ### 代码风格
-- 使用 TypeScript
-- 使用 ESLint + Prettier 格式化代码
+- 使用 TypeScript (strict)
+- 使用 ESLint 进行代码检查
 - 使用 TailwindCSS 进行样式开发
 - 组件使用 PascalCase 命名
-- 文件使用 kebab-case 命名
+- Server Actions 使用 camelCase 命名
+
+### 测试
+- Vitest 单测: `pnpm -F @vibevault/web test`(元数据解析、URL 规范化、OTP 哈希)
 
 ### 提交规范
 - feat: 新功能
