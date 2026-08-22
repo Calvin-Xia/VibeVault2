@@ -1,27 +1,30 @@
 {
-  "$schema": "../node_modules/wrangler/config-schema.json",
-  "name": "vibevault",
-  "main": ".open-next/worker.js",
-  "compatibility_date": "2026-05-01",
-  "compatibility_flags": ["nodejs_compat"],
-  "assets": {
-    "directory": ".open-next/assets",
-    "binding": "ASSETS"
-  },
-  // D1 database (Prisma via @prisma/adapter-d1).
-  // Before deploying: `wrangler d1 create vibevault` and paste the returned database_id below.
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "vibevault",
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
-    }
-  ],
-  // Non-secret environment variables. Secrets (NEXTAUTH_SECRET, RESEND_API_KEY, ...)
-  // are set via `wrangler secret put` (see .github/workflows/deploy.yml).
-  "vars": {
-    "NEXTAUTH_URL": "https://vibevault.pages.dev",
-    "EMAIL_FROM": "onboarding@resend.dev",
-    "DATABASE_PROVIDER": "d1"
-  }
+	"$schema": "../node_modules/wrangler/config-schema.json",
+	"name": "vibevault",
+	"main": ".open-next/worker.js",
+	"compatibility_date": "2026-05-01",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	// D1 database (Prisma via @prisma/adapter-d1).
+	// Before deploying: `wrangler d1 create vibevault` and paste the returned database_id below.
+	"d1_databases": [
+		{
+			"binding": "vibevault",
+			"database_name": "vibevault",
+			"database_id": "fac2b700-11b9-4830-bff4-17d680fd2795",
+			"remote": true
+		}
+	],
+	// Non-secret environment variables. Secrets (NEXTAUTH_SECRET, RESEND_API_KEY, ...)
+	// are set via `wrangler secret put` (see .github/workflows/deploy.yml).
+	"vars": {
+		"NEXTAUTH_URL": "https://vibevault.pages.dev",
+		"EMAIL_FROM": "onboarding@resend.dev",
+		"DATABASE_PROVIDER": "d1"
+	}
 }
