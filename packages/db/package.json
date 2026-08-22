@@ -12,6 +12,7 @@
     "studio": "prisma studio"
   },
   "dependencies": {
+    "@prisma/adapter-d1": "^5.22.0",
     "@prisma/client": "^5.10.0"
   },
   "devDependencies": {

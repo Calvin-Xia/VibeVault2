@@ -24,5 +24,18 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Build
+      - name: Generate Prisma Client
+        run: pnpm -F @vibevault/db generate
+      - name: Lint
+        run: pnpm -F @vibevault/web lint
+      - name: Test
+        run: pnpm -F @vibevault/web test
+      - name: Build (OpenNext)
         run: pnpm run build
+        env:
+          DATABASE_URL: file:./dev.db
+          DATABASE_PROVIDER: sqlite
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: ci-placeholder-secret
+          RESEND_API_KEY: ci-placeholder-key
+          EMAIL_FROM: test@example.com

@@ -51,6 +51,8 @@ ehthumbs.db
 build/
 .next/
 .nuxt/
+.pnpm-store/
+.open-next/
 
 # Database files
 *.db
