@@ -23,7 +23,7 @@
 	// Non-secret environment variables. Secrets (NEXTAUTH_SECRET, RESEND_API_KEY, ...)
 	// are set via `wrangler secret put` (see .github/workflows/deploy.yml).
 	"vars": {
-		"NEXTAUTH_URL": "https://vibevault.pages.dev",
+		"NEXTAUTH_URL": "https://vibevault.calvin-xia.workers.dev",
 		"EMAIL_FROM": "onboarding@resend.dev",
 		"DATABASE_PROVIDER": "d1"
 	}

@@ -20,7 +20,10 @@ function createClient(): PrismaClient {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { getCloudflareContext } = require('@opennextjs/cloudflare') as typeof import('@opennextjs/cloudflare')
       const { env } = getCloudflareContext()
-      const db = (env as Record<string, unknown>).DB
+      // Binding name may be rewritten by OpenNext deploy (e.g. database_name);
+      // accept DB (wrangler.jsonc) or the database_name fallback.
+      const envRecord = env as Record<string, unknown>
+      const db = envRecord.DB ?? envRecord.vibevault ?? envRecord.d1
       if (db) {
         return new PrismaClient({ adapter: new PrismaD1(db as never) })
       }

@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "User" (
+CREATE TABLE IF NOT EXISTS "User" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "email" TEXT NOT NULL,
     "name" TEXT,
@@ -9,7 +9,7 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
-CREATE TABLE "Link" (
+CREATE TABLE IF NOT EXISTS "Link" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
     "url" TEXT NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE "Link" (
 );
 
 -- CreateTable
-CREATE TABLE "Tag" (
+CREATE TABLE IF NOT EXISTS "Tag" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -45,7 +45,7 @@ CREATE TABLE "Tag" (
 );
 
 -- CreateTable
-CREATE TABLE "LinkTag" (
+CREATE TABLE IF NOT EXISTS "LinkTag" (
     "linkId" TEXT NOT NULL,
     "tagId" TEXT NOT NULL,
 
@@ -55,7 +55,7 @@ CREATE TABLE "LinkTag" (
 );
 
 -- CreateTable
-CREATE TABLE "Collection" (
+CREATE TABLE IF NOT EXISTS "Collection" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -66,7 +66,7 @@ CREATE TABLE "Collection" (
 );
 
 -- CreateTable
-CREATE TABLE "LinkVisit" (
+CREATE TABLE IF NOT EXISTS "LinkVisit" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "linkId" TEXT NOT NULL,
     "visitedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -74,7 +74,7 @@ CREATE TABLE "LinkVisit" (
 );
 
 -- CreateTable
-CREATE TABLE "Job" (
+CREATE TABLE IF NOT EXISTS "Job" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
     "type" TEXT NOT NULL,
@@ -88,7 +88,7 @@ CREATE TABLE "Job" (
 );
 
 -- CreateTable
-CREATE TABLE "OTPVerification" (
+CREATE TABLE IF NOT EXISTS "OTPVerification" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "email" TEXT NOT NULL,
     "codeHash" TEXT NOT NULL,
@@ -98,17 +98,18 @@ CREATE TABLE "OTPVerification" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Link_userId_url_key" ON "Link"("userId", "url");
+CREATE UNIQUE INDEX IF NOT EXISTS "Link_userId_url_key" ON "Link"("userId", "url");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Tag_userId_name_key" ON "Tag"("userId", "name");
+CREATE UNIQUE INDEX IF NOT EXISTS "Tag_userId_name_key" ON "Tag"("userId", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Collection_userId_name_key" ON "Collection"("userId", "name");
+CREATE UNIQUE INDEX IF NOT EXISTS "Collection_userId_name_key" ON "Collection"("userId", "name");
 
 -- CreateIndex
-CREATE INDEX "OTPVerification_email_idx" ON "OTPVerification"("email");
+CREATE INDEX IF NOT EXISTS "OTPVerification_email_idx" ON "OTPVerification"("email");
+
 
