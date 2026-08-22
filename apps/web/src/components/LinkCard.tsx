@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
@@ -18,6 +18,7 @@ interface LinkCardProps {
 
 const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
   const router = useRouter()
+  const cardRef = useRef<HTMLDivElement>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [title, setTitle] = useState(link.title ?? '')
@@ -28,6 +29,27 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
   const [isLoadingTags, setIsLoadingTags] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Spotlight 聚光灯:pointermove + rAF 节流,仅 hover 设备启用(见 DESIGN.md)
+  useEffect(() => {
+    const el = cardRef.current
+    if (!el || !window.matchMedia('(hover: hover)').matches) return
+    let raf = 0
+    const onMove = (e: PointerEvent) => {
+      if (raf) return
+      raf = requestAnimationFrame(() => {
+        raf = 0
+        const r = el.getBoundingClientRect()
+        el.style.setProperty('--mx', ((e.clientX - r.left) / r.width) * 100 + '%')
+        el.style.setProperty('--my', ((e.clientY - r.top) / r.height) * 100 + '%')
+      })
+    }
+    el.addEventListener('pointermove', onMove, { passive: true })
+    return () => {
+      el.removeEventListener('pointermove', onMove)
+      if (raf) cancelAnimationFrame(raf)
+    }
+  }, [])
 
   const handleFavorite = async () => {
     try {
@@ -106,7 +128,8 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
     setNote(link.note ?? '')
   }
 
-  const actionBtnClass = 'p-1.5 rounded-full text-muted-foreground hover:bg-accent transition-colors'
+  const actionBtnClass =
+    'p-3.5 sm:p-1.5 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors'
 
   return (
     <>
@@ -122,14 +145,10 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
         variant="danger"
       />
 
-      <motion.div
-        className="glass rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-md transition-shadow"
-        whileHover={{ y: -2 }}
-        transition={{ duration: 0.2 }}
-      >
+      <motion.div ref={cardRef} className="card">
         {link.ogImage && (
-          <div className="relative h-48 bg-muted">
-            <Image src={link.ogImage} alt={link.title} fill className="object-cover" />
+          <div className="card-cover-wrap relative bg-muted">
+            <Image src={link.ogImage} alt={link.title} fill className="card-cover object-cover" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
           </div>
         )}
 
@@ -147,26 +166,26 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
                 {isEditing ? (
                   <input
                     type="text"
-                    className="flex-1 px-2 py-1 text-lg font-semibold bg-transparent border-b border-border focus:outline-none"
+                    className="flex-1 px-2 py-1 text-base font-semibold bg-transparent border-b border-border focus:border-violet focus:outline-none"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                   />
                 ) : (
-                  <h3 className="text-lg font-semibold line-clamp-2">{link.title || link.url}</h3>
+                  <h3 className="text-base font-semibold leading-snug line-clamp-2">{link.title || link.url}</h3>
                 )}
               </div>
-              <div className="text-sm text-muted-foreground flex items-center gap-2">
-                <span className="truncate">{link.domain}</span>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="font-mono text-xs truncate">{link.domain}</span>
                 <span>•</span>
                 <span className="text-xs">{new Date(link.createdAt).toLocaleDateString()}</span>
               </div>
             </div>
             <button
               onClick={handleFavorite}
-              className={`p-1.5 rounded-full transition-colors ${
+              className={`p-3.5 sm:p-1.5 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 link.favorite
-                  ? 'text-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-900/30'
-                  : 'text-muted-foreground hover:bg-accent'
+                  ? 'text-warning hover:bg-warning/10'
+                  : 'text-muted-foreground hover:bg-secondary'
               }`}
               aria-label={link.favorite ? '取消星标' : '添加星标'}
             >
@@ -177,12 +196,12 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
           {isEditing ? (
             <div className="space-y-2 mb-3">
               <textarea
-                className="w-full px-2 py-1 text-sm bg-transparent border border-border rounded-lg focus:outline-none"
+                className="w-full px-2 py-1 text-sm bg-transparent border border-border rounded-lg focus:border-violet focus:outline-none"
                 rows={2} placeholder="描述" value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
               <textarea
-                className="w-full px-2 py-1 text-sm bg-transparent border border-border rounded-lg focus:outline-none"
+                className="w-full px-2 py-1 text-sm bg-transparent border border-border rounded-lg focus:border-violet focus:outline-none"
                 rows={3} placeholder="备注" value={note}
                 onChange={(e) => setNote(e.target.value)}
               />
@@ -217,13 +236,13 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
               <>
                 <button
                   onClick={handleSave} disabled={isSubmitting}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn btn-primary h-8 px-3 text-xs"
                 >
                   {isSubmitting ? '保存中...' : '保存'}
                 </button>
                 <button
                   onClick={handleCancelEdit}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors"
+                  className="btn btn-secondary h-8 px-3 text-xs"
                 >
                   取消
                 </button>
@@ -232,7 +251,7 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
               <>
                 <button
                   onClick={() => window.open(link.url, '_blank', 'noopener,noreferrer')}
-                  className="flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                  className="flex items-center gap-1 text-sm font-medium text-violet hover:text-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded transition-colors"
                 >
                   <ExternalLink className="w-4 h-4" />
                   <span>打开</span>

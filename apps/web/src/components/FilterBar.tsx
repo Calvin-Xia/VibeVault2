@@ -112,7 +112,7 @@ const FilterBar: React.FC = () => {
   }
 
   return (
-    <div className="border-b border-border bg-card/80 backdrop-blur-md px-6 py-3 flex flex-col gap-4">
+    <div className="relative border-b border-border bg-card/60 backdrop-blur-md px-6 py-3 flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
         {/* Search form */}
         <form onSubmit={handleSearch} className="flex-1 max-w-md">
@@ -121,7 +121,7 @@ const FilterBar: React.FC = () => {
             <input
               type="text"
               placeholder="搜索链接..."
-              className="w-full pl-10 pr-4 py-2 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="input pl-10"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               aria-label="搜索链接"
@@ -172,7 +172,7 @@ const FilterBar: React.FC = () => {
 
         {/* Add link button */}
         <button 
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium"
+          className="btn btn-primary"
           onClick={() => setShowAddForm(!showAddForm)}
         >
           <Plus className="h-4 w-4" />
@@ -180,9 +180,18 @@ const FilterBar: React.FC = () => {
         </button>
       </div>
 
+      {/* 移动端悬浮添加入口(≥48px 触摸目标,见 DESIGN.md) */}
+      <button
+        className="fab-add md:hidden"
+        onClick={() => setShowAddForm(!showAddForm)}
+        aria-label="添加链接"
+      >
+        <Plus className="h-5 w-5" />
+      </button>
+
       {/* Add link form */}
       {showAddForm && (
-        <div className="bg-muted rounded-lg p-4">
+        <div className="bg-muted/60 border border-border rounded-lg p-4">
           <form onSubmit={handleAddLink} className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="flex-1">
@@ -191,7 +200,7 @@ const FilterBar: React.FC = () => {
                   type="url"
                   id="url"
                   placeholder="输入URL..."
-                  className="w-full px-4 py-2 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="input"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   aria-label="输入链接URL"
@@ -203,7 +212,7 @@ const FilterBar: React.FC = () => {
                   type="text"
                   id="title"
                   placeholder="输入标题..."
-                  className="w-full px-4 py-2 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="input"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   aria-label="输入标题"
@@ -217,7 +226,7 @@ const FilterBar: React.FC = () => {
                 id="note"
                 placeholder="输入备注..."
                 rows={2}
-                className="w-full px-4 py-2 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="input h-auto py-2 resize-y"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 aria-label="输入备注"
@@ -234,12 +243,12 @@ const FilterBar: React.FC = () => {
                     <button
                       key={tag.id}
                       type="button"
-                      className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
-                      style={{
-                        backgroundColor: selectedTags.includes(tag.id) ? (tag.color || '#8b5cf6') : undefined,
-                        color: selectedTags.includes(tag.id) ? 'white' : undefined,
-                        ...(selectedTags.includes(tag.id) ? {} : { backgroundColor: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }),
-                      }}
+                      className="chip focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      style={
+                        selectedTags.includes(tag.id)
+                          ? { backgroundColor: tag.color || '#8b5cf6', color: 'white' }
+                          : { backgroundColor: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }
+                      }
                       onClick={() => {
                         if (selectedTags.includes(tag.id)) {
                           setSelectedTags(selectedTags.filter(id => id !== tag.id))
@@ -258,7 +267,7 @@ const FilterBar: React.FC = () => {
             <div className="flex gap-2 justify-end">
               <button
                 type="button"
-                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors text-sm font-medium"
+                className="btn btn-secondary"
                 onClick={() => {
                   setShowAddForm(false)
                   setUrl('')
@@ -272,7 +281,7 @@ const FilterBar: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-70 disabled:cursor-not-allowed"
+                className="btn btn-primary disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? '添加中...' : '添加'}
               </button>

@@ -1,9 +1,12 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { useSession, signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 import { sendOtp } from '@/actions/otpActions'
+
+const BRAND = 'VibeVault'
 
 export default function SignInPage() {
   const { status } = useSession()
@@ -16,6 +19,8 @@ export default function SignInPage() {
   const [loading, setLoading] = useState(false)
   const [cooldown, setCooldown] = useState(0)
   const codeInputRef = useRef<HTMLInputElement>(null)
+
+  const brandLetters = useMemo(() => BRAND.split(''), [])
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -46,7 +51,7 @@ export default function SignInPage() {
   if (status === 'loading' || status === 'authenticated') {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-violet border-t-transparent" />
       </div>
     )
   }
@@ -106,7 +111,7 @@ export default function SignInPage() {
         setCooldown(60)
         setCode('')
       } else {
-        setError(result.error || '发送失败，请重试')
+        setError('发送失败，请重试')
       }
     } catch {
       setError('发送失败，请稍后重试')
@@ -116,17 +121,35 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="glass w-full max-w-md rounded-2xl p-8">
+    <div className="relative flex min-h-screen items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 24, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+        className="glass card w-full max-w-md rounded-2xl p-8"
+      >
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">VibeVault</h1>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">可视化链接收藏夹</p>
+          <span className="eyebrow in-view mb-4">Personal Link Vault</span>
+          <h1 className="font-display mt-4 text-4xl sm:text-5xl font-bold tracking-tight">
+            {brandLetters.map((ch, i) => (
+              <motion.span
+                key={i}
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 + i * 0.05, duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+                className="gradient-text inline-block"
+              >
+                {ch}
+              </motion.span>
+            ))}
+          </h1>
+          <p className="mt-3 text-sm text-muted-foreground">可视化链接收藏夹</p>
         </div>
 
         {step === 'email' ? (
           <form onSubmit={handleSendOtp} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1.5">
                 邮箱地址
               </label>
               <input
@@ -137,21 +160,17 @@ export default function SignInPage() {
                 placeholder="your@email.com"
                 required
                 autoFocus
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors"
+                className="input h-11"
               />
             </div>
 
             {error && (
-              <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3">
-                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              <div className="rounded-lg border border-destructive/35 bg-destructive/10 px-4 py-3">
+                <p className="text-sm text-destructive">{error}</p>
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading || !email}
-              className="w-full rounded-lg bg-blue-600 px-4 py-3 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
+            <button type="submit" disabled={loading || !email} className="btn btn-primary w-full h-11">
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -165,13 +184,13 @@ export default function SignInPage() {
         ) : (
           <form onSubmit={handleVerifyOtp} className="space-y-4">
             <div className="mb-2">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                验证码已发送至 <span className="font-medium text-gray-700 dark:text-gray-300">{email}</span>
+              <p className="text-sm text-muted-foreground">
+                验证码已发送至 <span className="font-medium text-foreground">{email}</span>
               </p>
             </div>
 
             <div>
-              <label htmlFor="code" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="code" className="block text-sm font-medium text-foreground mb-1.5">
                 验证码
               </label>
               <input
@@ -184,21 +203,17 @@ export default function SignInPage() {
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
                 placeholder="000000"
                 required
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors text-center text-2xl tracking-[0.5em] font-mono"
+                className="input h-11 text-center text-2xl tracking-[0.5em] font-mono"
               />
             </div>
 
             {error && (
-              <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3">
-                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              <div className="rounded-lg border border-destructive/35 bg-destructive/10 px-4 py-3">
+                <p className="text-sm text-destructive">{error}</p>
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading || code.length !== 6}
-              className="w-full rounded-lg bg-blue-600 px-4 py-3 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
+            <button type="submit" disabled={loading || code.length !== 6} className="btn btn-primary w-full h-11">
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -217,7 +232,7 @@ export default function SignInPage() {
                   setCode('')
                   setError('')
                 }}
-                className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                className="link text-sm"
               >
                 ← 更换邮箱
               </button>
@@ -226,14 +241,14 @@ export default function SignInPage() {
                 type="button"
                 onClick={handleResendOtp}
                 disabled={cooldown > 0 || loading}
-                className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+                className="link text-sm disabled:text-textTertiary disabled:cursor-not-allowed"
               >
                 {cooldown > 0 ? `重新发送 (${cooldown}s)` : '重新发送验证码'}
               </button>
             </div>
           </form>
         )}
-      </div>
+      </motion.div>
     </div>
   )
 }

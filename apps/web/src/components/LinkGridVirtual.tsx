@@ -103,9 +103,11 @@ const LinkGridVirtual: React.FC<LinkGridVirtualProps> = ({ links }) => {
 
   if (sortedLinks.length === 0) {
     return (
-      <div className="text-center py-12">
-        <Pin className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-        <h3 className="text-xl font-medium mb-2">暂无链接</h3>
+      <div className="empty-state max-w-2xl mx-auto">
+        <div className="empty-state__icon">
+          <Pin className="h-7 w-7" />
+        </div>
+        <h3 className="text-xl font-medium mb-1">暂无链接</h3>
         <p className="text-muted-foreground">
           点击右上角的&quot;添加链接&quot;按钮开始收藏链接吧
         </p>
@@ -130,7 +132,12 @@ const LinkGridVirtual: React.FC<LinkGridVirtualProps> = ({ links }) => {
               key={link.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
+              transition={{
+                duration: 0.5,
+                ease: [0.16, 1, 0.3, 1],
+                // 仅首批卡片做 stagger 入场,后续滚动入场即时(见 DESIGN.md 性能红线)
+                delay: virtualRow.index < 12 ? virtualRow.index * 0.04 : 0,
+              }}
               className="absolute left-0 right-0"
               style={{
                 top: `${virtualRow.start}px`,

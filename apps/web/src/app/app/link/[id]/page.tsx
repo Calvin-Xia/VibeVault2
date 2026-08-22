@@ -18,6 +18,7 @@ import {
 import { getLink, updateLink, deleteLink, addTagToLink, removeTagFromLink, retryLinkMetadata } from '@/actions/linkActions'
 import { listTags } from '@/actions/tagActions'
 import { Link, Tag as TagType, LinkStatus } from '@/types/link'
+import { Reveal } from '@/components/Reveal'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import TagManager from '@/components/ui/TagManager'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -293,10 +294,10 @@ function LinkDetail() {
                   />
                 )}
                 <span className="text-sm text-muted-foreground">{link.domain}</span>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                  link.status === 'INBOX' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                  link.status === 'READING' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                  'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                <span className={`badge ${
+                  link.status === 'INBOX' ? 'badge--success' :
+                  link.status === 'READING' ? 'badge--warning' :
+                  'badge--pending'
                 }`}>
                   {link.status === 'INBOX' ? '未处理' : link.status === 'READING' ? '正在处理' : '已完成'}
                 </span>
@@ -309,12 +310,12 @@ function LinkDetail() {
                   onChange={(e) => setTitle(e.target.value)}
                 />
               ) : (
-                <h1 className="text-2xl font-semibold">{link.title || link.url}</h1>
+                <Reveal as="h1" className="text-2xl font-semibold">{link.title || link.url}</Reveal>
               )}
             </div>
             <button
               onClick={handleFavorite}
-              className={`p-2 rounded-full transition-colors ${link.favorite ? 'text-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-900/30' : 'text-muted-foreground hover:bg-muted'}`}
+              className={`p-2 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${link.favorite ? 'text-warning hover:bg-warning/10' : 'text-muted-foreground hover:bg-muted'}`}
             >
               {link.favorite ? <Star className="w-5 h-5 fill-current" /> : <StarOff className="w-5 h-5" />}
             </button>

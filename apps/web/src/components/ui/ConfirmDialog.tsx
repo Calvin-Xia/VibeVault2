@@ -60,7 +60,7 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      className="overlay fixed inset-0 flex items-center justify-center z-50 p-4"
       onClick={handleClose}
     >
       <div
@@ -69,7 +69,7 @@ export function ConfirmDialog({
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-description"
-        className="relative bg-card text-card-foreground rounded-xl shadow-2xl p-6 max-w-sm w-full"
+        className="panel relative bg-card text-card-foreground rounded-xl shadow-2xl p-6 max-w-sm w-full"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -115,7 +115,7 @@ export function ConfirmDialog({
           <button
             onClick={handleClose}
             disabled={isConfirming}
-            className="flex-1 px-4 py-2 text-sm font-medium text-secondary-foreground bg-secondary rounded-lg hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn btn-secondary flex-1"
           >
             {cancelLabel}
           </button>
@@ -123,10 +123,8 @@ export function ConfirmDialog({
             ref={confirmButtonRef}
             onClick={onConfirm}
             disabled={isConfirming}
-            className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-              variant === 'danger'
-                ? 'text-destructive-foreground bg-destructive hover:bg-destructive/90'
-                : 'text-primary-foreground bg-primary hover:bg-primary/90'
+            className={`btn flex-1 ${
+              variant === 'danger' ? 'btn-destructive' : 'btn-primary'
             }`}
           >
             {isConfirming ? 'Processing...' : confirmLabel}

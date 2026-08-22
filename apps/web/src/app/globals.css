@@ -2,67 +2,111 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   VibeVault「暗夜宝库」design tokens — DESIGN.md
+   暗色为品牌默认(<html class="dark">),亮色为「白昼宝库」变体
+   ============================================================ */
 @layer base {
+  /* 白昼主题(亮色变体) */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 222 40% 97%;
+    --foreground: 230 30% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 230 30% 10%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 258 84% 56%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 222 30% 93%;
+    --secondary-foreground: 230 25% 20%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 222 30% 93%;
+    --muted-foreground: 228 14% 44%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 258 70% 94%;
+    --accent-foreground: 230 30% 14%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    --border: 222 24% 88%;
+    --input: 222 24% 86%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 230 30% 10%;
 
-    --ring: 222.2 84% 4.9%;
+    --ring: 258 84% 56%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* 新增语义层 */
+    --surface-alt: 222 34% 95%;
+    --surface-hover: 222 30% 90%;
+    --border-hover: 226 18% 72%;
+    --violet: 258 84% 56%;
+    --cyan: 187 86% 45%;
+    --text-tertiary: 228 14% 56%;
+    --success: 158 64% 40%;
+    --warning: 43 96% 50%;
+
+    /* RGB 辅助值 */
+    --violet-rgb: 124 58 237;
+    --cyan-rgb: 8 145 178;
+    --bg-rgb: 243 245 251;
+    --success-rgb: 22 163 74;
+    --warning-rgb: 217 119 6;
+    --destructive-rgb: 220 38 38;
   }
 
+  /* 暗夜主题(品牌默认) */
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 228 30% 5%;
+    --foreground: 220 40% 96%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 228 26% 8%;
+    --card-foreground: 220 40% 96%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 258 84% 60%;
+    --primary-foreground: 224 60% 98%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 227 22% 13%;
+    --secondary-foreground: 220 30% 88%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 227 22% 12%;
+    --muted-foreground: 225 14% 62%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 258 50% 18%;
+    --accent-foreground: 220 40% 96%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 61%;
+    --destructive-foreground: 220 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --border: 227 20% 15%;
+    --input: 227 20% 15%;
+    --popover: 228 28% 7%;
+    --popover-foreground: 220 40% 94%;
 
-    --ring: 212.7 26.8% 83.9%;
+    --ring: 258 84% 60%;
+
+    --radius: 0.75rem;
+
+    /* 新增语义层 */
+    --surface-alt: 228 24% 11%;
+    --surface-hover: 228 22% 15%;
+    --border-hover: 226 22% 26%;
+    --violet: 258 84% 60%;
+    --cyan: 187 86% 51%;
+    --text-tertiary: 225 14% 46%;
+    --success: 158 64% 45%;
+    --warning: 43 96% 56%;
+
+    /* RGB 辅助值 */
+    --violet-rgb: 124 58 237;
+    --cyan-rgb: 34 211 238;
+    --bg-rgb: 8 10 18;
+    --success-rgb: 41 188 95;
+    --warning-rgb: 251 191 36;
+    --destructive-rgb: 228 85 92;
   }
 }
 
@@ -72,12 +116,453 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans), 'Noto Sans SC', 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    letter-spacing: 0.02em;
   }
+
+  /* 细滚动条(暗色友好) */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border-hover) / 0.6);
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--border-hover)); }
 }
 
-/* Glassmorphism effect */
+/* ============================================================
+   通用玻璃/渐变工具类(兼容旧 .glass)
+   ============================================================ */
 .glass {
-  @apply bg-card/70 backdrop-blur-md border border-border/20 shadow-sm;
+  @apply bg-card/70 border border-border/20 shadow-sm;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
+.gradient-accent {
+  background-image: linear-gradient(135deg, hsl(var(--violet)), hsl(var(--cyan)));
+}
 
+.gradient-text {
+  background-image: linear-gradient(135deg, hsl(var(--violet)), hsl(var(--cyan)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* ============================================================
+   氛围层:极光呼吸光晕(radial-gradient + transform,零 filter/blur)
+   ============================================================ */
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.aurora::before,
+.aurora::after {
+  content: '';
+  position: absolute;
+  width: 62vmax;
+  height: 62vmax;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, rgba(var(--violet-rgb), 0.16), transparent 62%);
+  animation: auroraDrift 28s ease-in-out infinite alternate;
+}
+.aurora::after {
+  background: radial-gradient(circle at center, rgba(var(--cyan-rgb), 0.1), transparent 62%);
+  animation-duration: 36s;
+  animation-direction: alternate-reverse;
+}
+@keyframes auroraDrift {
+  from { transform: translate3d(-8%, -6%, 0) scale(1); }
+  to { transform: translate3d(10%, 8%, 0) scale(1.15); }
+}
+
+/* ============================================================
+   按钮(全部状态)
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 0.625rem;
+  font-family: var(--font-sans), 'Noto Sans SC', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.18s ease,
+    background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, opacity 0.18s ease;
+}
+.btn:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+.btn-primary {
+  background-image: linear-gradient(135deg, hsl(var(--violet)), hsl(var(--cyan)));
+  color: hsl(var(--primary-foreground));
+  box-shadow: 0 4px 18px -6px rgba(var(--violet-rgb), 0.55);
+}
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 26px -6px rgba(var(--violet-rgb), 0.7);
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+  box-shadow: 0 2px 10px -4px rgba(var(--violet-rgb), 0.5);
+}
+
+.btn-secondary {
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  border-color: hsl(var(--border));
+}
+.btn-secondary:hover:not(:disabled) {
+  background: hsl(var(--surface-hover));
+  border-color: hsl(var(--border-hover));
+}
+.btn-secondary:active:not(:disabled) { transform: scale(0.97); }
+
+.btn-ghost { background: transparent; color: hsl(var(--secondary-foreground)); }
+.btn-ghost:hover:not(:disabled) { background: hsl(var(--secondary) / 0.6); color: hsl(var(--foreground)); }
+.btn-ghost:active:not(:disabled) { background: hsl(var(--secondary)); }
+
+.btn-destructive { background: hsl(var(--destructive)); color: hsl(var(--destructive-foreground)); }
+.btn-destructive:hover:not(:disabled) {
+  filter: brightness(1.08);
+  box-shadow: 0 4px 16px -6px rgba(var(--destructive-rgb), 0.5);
+}
+.btn-destructive:active:not(:disabled) { transform: scale(0.97); }
+
+/* ============================================================
+   卡片(含 Spotlight 聚光灯 + 封面缩放)
+   ============================================================ */
+.card {
+  position: relative;
+  overflow: hidden;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 1;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(var(--violet-rgb), 0.13), transparent 65%);
+}
+.card:hover {
+  transform: translateY(-3px);
+  border-color: hsl(var(--border-hover));
+  box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.6),
+    0 0 24px -6px rgba(var(--violet-rgb), 0.25);
+}
+.card:hover::before { opacity: 1; }
+.card:focus-within {
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.35), 0 8px 24px -12px rgba(0, 0, 0, 0.55);
+}
+
+.card-cover-wrap { overflow: hidden; }
+.card-cover { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+.card:hover .card-cover { transform: scale(1.045); }
+
+/* ============================================================
+   导航
+   ============================================================ */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.nav-item:hover { background: hsl(var(--secondary) / 0.7); color: hsl(var(--foreground)); }
+.nav-item:active { background: hsl(var(--secondary)); }
+.nav-item:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: -2px; }
+.nav-item[data-active='true'] {
+  color: hsl(var(--foreground));
+  font-weight: 600;
+  background: linear-gradient(90deg, hsl(var(--accent)), transparent);
+  box-shadow: inset 2px 0 0 hsl(var(--violet));
+}
+
+/* ============================================================
+   链接
+   ============================================================ */
+.link {
+  color: hsl(var(--violet));
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.link:hover { color: hsl(var(--cyan)); text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1.5px; }
+.link:active { color: hsl(var(--violet)); }
+.link:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; border-radius: 2px; }
+
+/* ============================================================
+   标签 / 徽章
+   ============================================================ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 1.5rem;
+  padding: 0 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  border: 1px solid hsl(var(--border));
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+.chip:hover { border-color: hsl(var(--border-hover)); transform: translateY(-1px); }
+.chip:active { transform: translateY(0) scale(0.96); }
+.chip:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+.chip[data-active='true'] {
+  background: hsl(var(--violet) / 0.16);
+  color: hsl(var(--violet));
+  border-color: hsl(var(--violet) / 0.45);
+  font-weight: 600;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 1.25rem;
+  padding: 0 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+.badge--success { color: hsl(var(--success)); background: hsl(var(--success) / 0.14); border: 1px solid hsl(var(--success) / 0.35); }
+.badge--warning { color: hsl(var(--warning)); background: hsl(var(--warning) / 0.14); border: 1px solid hsl(var(--warning) / 0.35); }
+.badge--error { color: hsl(var(--destructive)); background: hsl(var(--destructive) / 0.14); border: 1px solid hsl(var(--destructive) / 0.35); }
+.badge--pending { color: hsl(var(--muted-foreground)); background: hsl(var(--secondary)); border: 1px solid hsl(var(--border)); }
+
+/* ============================================================
+   输入框
+   ============================================================ */
+.input {
+  height: 2.5rem;
+  width: 100%;
+  padding: 0 0.875rem;
+  background: hsl(var(--surface-alt));
+  border: 1px solid hsl(var(--input));
+  border-radius: 0.625rem;
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+.input::placeholder { color: hsl(var(--text-tertiary)); }
+.input:hover { border-color: hsl(var(--border-hover)); }
+.input:focus {
+  outline: none;
+  border-color: hsl(var(--violet));
+  background: hsl(var(--card));
+  box-shadow: 0 0 0 3px hsl(var(--violet) / 0.22), 0 0 18px -6px rgba(var(--violet-rgb), 0.35);
+}
+.input:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 1px; }
+.input:disabled { opacity: 0.5; cursor: not-allowed; background: hsl(var(--muted)); }
+
+/* ============================================================
+   弹窗 / 抽屉
+   ============================================================ */
+.overlay {
+  background: hsl(var(--bg-rgb) / 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.panel {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 1rem;
+  box-shadow: 0 24px 64px -16px rgba(0, 0, 0, 0.7);
+  animation: panelIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes panelIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ============================================================
+   Skeleton / 空状态
+   ============================================================ */
+.skeleton {
+  position: relative;
+  border-radius: 0.5rem;
+  background: linear-gradient(100deg, hsl(var(--muted)) 40%, hsl(var(--surface-hover)) 50%, hsl(var(--muted)) 60%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+@keyframes shimmer {
+  from { background-position: 130% 0; }
+  to { background-position: -30% 0; }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 3rem 1.5rem;
+  border: 1.5px dashed hsl(var(--border));
+  border-radius: 1rem;
+  background: hsl(var(--background) / 0.4);
+}
+.empty-state__icon {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 1rem;
+  color: hsl(var(--violet));
+  background: linear-gradient(135deg, hsl(var(--violet) / 0.18), hsl(var(--cyan) / 0.14));
+  border: 1px solid hsl(var(--violet) / 0.3);
+}
+
+/* ============================================================
+   Eyebrow
+   ============================================================ */
+.eyebrow {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+.eyebrow::after {
+  content: '';
+  display: block;
+  margin-top: 0.5rem;
+  width: 0;
+  height: 2px;
+  border-radius: 2px;
+  background-image: linear-gradient(90deg, hsl(var(--violet)), hsl(var(--cyan)));
+  transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.eyebrow.in-view::after { width: 2.5rem; }
+
+/* ============================================================
+   ReactFlow 图谱定制
+   ============================================================ */
+.node-link {
+  border: 1.5px solid hsl(var(--violet) / 0.55) !important;
+  background: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 0 0 1px hsl(var(--border)), 0 4px 16px -8px rgba(0, 0, 0, 0.6);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+.node-link:hover { border-color: hsl(var(--cyan)) !important; box-shadow: 0 0 20px -4px rgba(var(--cyan-rgb), 0.45) !important; transform: translateY(-2px); }
+.node-link.react-flow__node.selected { border-color: hsl(var(--violet)) !important; box-shadow: 0 0 0 2px hsl(var(--violet) / 0.4), 0 0 28px -4px rgba(var(--violet-rgb), 0.55) !important; }
+
+.node-tag {
+  border: 1.5px dashed hsl(var(--cyan) / 0.6) !important;
+  border-radius: 9999px !important;
+  background: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+.node-tag:hover { border-style: solid !important; border-color: hsl(var(--cyan)) !important; }
+
+.react-flow__edge-path {
+  stroke: hsl(var(--border-hover));
+  stroke-width: 1.5;
+  transition: stroke 0.2s ease, stroke-width 0.2s ease;
+}
+.react-flow__edge:hover .react-flow__edge-path,
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: hsl(var(--violet)) !important;
+  stroke-width: 2;
+}
+
+/* ============================================================
+   移动端 FAB
+   ============================================================ */
+.fab-add {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 40;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  background-image: linear-gradient(135deg, hsl(var(--violet)), hsl(var(--cyan)));
+  color: hsl(var(--primary-foreground));
+  box-shadow: 0 8px 24px -8px rgba(var(--violet-rgb), 0.6);
+}
+.fab-add:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+
+/* ============================================================
+   入场动画
+   ============================================================ */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: none; }
+}
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.in-view { opacity: 1; transform: none; }
+
+/* ============================================================
+   布局:自动网格 + 移动端触摸目标
+   ============================================================ */
+.grid-auto {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+@media (max-width: 640px) {
+  .btn { min-height: 2.75rem; }   /* 44px 触摸目标 */
+  .nav-item { min-height: 2.75rem; }
+  .card::before { display: none; }
+  .aurora { opacity: 0.7; }
+}
+
+/* ============================================================
+   Reduced Motion 降级
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .aurora::before,
+  .aurora::after { animation: none; }
+  .card:hover { transform: none; }
+  .card:hover .card-cover { transform: none; }
+}

@@ -47,7 +47,7 @@ async function LinksGrid({ searchParams }: { searchParams: Promise<Record<string
 async function Dashboard({ searchParams }: { searchParams: Promise<Record<string, string | string[]>> }) {
   return (
     <div className="flex flex-col h-full">
-      <Suspense fallback={<div className="h-16 border-b bg-card/80 animate-pulse" />}>
+      <Suspense fallback={<div className="h-16 border-b border-border bg-card/60" />}>
         <FilterBar />
       </Suspense>
       <main className="flex-1 overflow-y-auto p-6">

@@ -95,3 +95,4 @@ cd apps/web && pnpm lint
 - Auth: email OTP via Resend (no password, no GitHub OAuth), JWT sessions, `middleware.ts` guards `/app/:path*`; users auto-created on first successful OTP
 - 元数据抓取已实现(`src/lib/metadata.ts`):创建链接后立即懒抓取 og:title/og:description/og:image/favicon/siteName/publishedTime,`metadataStatus` PENDING→READY/FAILED,详情页支持手动重试;SSRF 防护(拒绝内网/保留 IP、非 http(s)、超时与大小限制)
 - Knowledge graph is inline in `graph/page.tsx` (`GraphView` is not a separate component file); masonry grid uses `LinkGridVirtual` (@tanstack/react-virtual) + Fuse.js search
+- 视觉设计规范见根目录 `DESIGN.md`(暗夜宝库 Dark Vault):暗色为默认(`<html class="dark">`),亮色为白昼变体;新 UI 必须遵守其 Color Palette(仅 CSS 变量)、Typography(Noto Sans SC + Space Grotesk + JetBrains Mono,via next/font)、组件类(`.btn*/.card/.chip/.badge/.input/.nav-item` 等)与性能红线(零 `filter: blur()` 于移动元素、聚光灯 rAF 节流、`prefers-reduced-motion` 降级);`tailwind.config.js` 颜色已升级为 `<alpha-value>` 模式(`bg-card/80` 等透明度修饰符有效)

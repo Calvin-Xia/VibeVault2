@@ -6,6 +6,7 @@ import { Pencil, Trash2, Save, X, Upload, Download, Tag } from 'lucide-react'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { exportData, importData } from '@/actions/exportActions'
 import { listTags, deleteTag, updateTag, createTag } from '@/actions/tagActions'
+import { Reveal } from '@/components/Reveal'
 
 function Settings() {
   const [isExporting, setIsExporting] = useState(false)
@@ -202,7 +203,7 @@ function Settings() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-6 text-foreground">设置</h1>
+      <Reveal as="h1" className="text-2xl font-semibold mb-6 text-foreground">设置</Reveal>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* 导入导出 */}
         <div className="glass rounded-2xl p-6">
@@ -297,7 +298,7 @@ function Settings() {
                     {editingTag?.id === tag.id ? (
                       <>
                         <button 
-                          className="text-green-500 hover:text-green-700 dark:hover:text-green-300"
+                          className="text-success hover:text-success/80"
                           onClick={handleSaveEditTag}
                           disabled={isSubmitting}
                           title="保存"

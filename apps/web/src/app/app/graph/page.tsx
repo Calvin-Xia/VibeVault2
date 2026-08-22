@@ -18,6 +18,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css'
 import { listLinks } from '@/actions/linkActions'
 import { LayoutGrid, GitBranch } from 'lucide-react'
+import { Reveal } from '@/components/Reveal'
 
 interface GraphNodeData {
   label: string
@@ -114,24 +115,17 @@ function GraphView() {
             y: tagStartY + index * tagSpacing,
           },
           sourcePosition: Position.Right, // Edge starts from right side of tag
+          className: 'node-tag',
           data: {
             label: tag.name,
-            style: {
-              backgroundColor: tag.color || '#8b5cf6',
-              color: 'white',
-              borderRadius: '12px',
-              padding: '12px 20px',
-              fontSize: '14px',
-              fontWeight: '600',
-              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-            },
           },
           style: {
             width: '120px',
             height: 'auto',
             textAlign: 'center',
             cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '600',
           },
         })
       })
@@ -165,23 +159,17 @@ function GraphView() {
               y: linkY,
             },
             targetPosition: Position.Left, // Edge enters from left side of link
+            className: 'node-link',
             data: {
               label: link.title || link.domain || '未命名链接',
               url: link.url,
-              style: {
-                backgroundColor: '#3b82f6',
-                color: 'white',
-                borderRadius: '12px',
-                padding: '12px 16px',
-                fontSize: '13px',
-                boxShadow: '0 2px 10px rgba(0, 0, 0, 0.15)',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-              },
             },
             style: {
               width: '200px',
               height: 'auto',
               cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '500',
             },
           })
           
@@ -192,9 +180,9 @@ function GraphView() {
             target: nodeId,
             type: 'bezier',
             style: {
-              stroke: tag.color || '#8b5cf6',
-              strokeWidth: 3,
-              opacity: 0.8,
+              stroke: 'hsl(var(--border-hover))',
+              strokeWidth: 1.5,
+              opacity: 0.85,
               strokeLinecap: 'round',
               strokeDasharray: '',
             },
@@ -203,7 +191,7 @@ function GraphView() {
               type: MarkerType.Arrow,
               width: 14,
               height: 14,
-              color: tag.color || '#8b5cf6',
+              color: 'hsl(var(--border-hover))',
             },
           })
         })
@@ -225,7 +213,7 @@ function GraphView() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">知识图谱</h1>
+      <Reveal as="h1" className="text-2xl font-semibold mb-4">知识图谱</Reveal>
       <div className="glass rounded-2xl p-6">
         {/* View options tab */}
         <div className="flex items-center justify-between mb-4">
@@ -248,7 +236,7 @@ function GraphView() {
             </button>
           </div>
           <button
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity text-sm font-medium"
+            className="btn btn-primary"
             onClick={generateGraphData}
             disabled={isLoading}
           >
@@ -257,7 +245,7 @@ function GraphView() {
         </div>
         <div 
           ref={reactFlowWrapper} 
-          className="h-[600px] bg-gradient-to-br from-muted to-accent rounded-lg relative"
+          className="h-[600px] bg-background border border-border rounded-xl relative"
           style={{ width: '100%' }}
         >
           <ReactFlow
@@ -303,9 +291,9 @@ function GraphView() {
               }}
               nodeColor={(node) => {
                 if (node.id.startsWith('tag-')) {
-                  return 'hsl(263 70% 68%)' // Purple for tags
+                  return 'hsl(var(--cyan))' // 标签节点:青
                 }
-                return 'hsl(217 91% 60%)' // Blue for links
+                return 'hsl(var(--violet))' // 链接节点:紫
               }}
             />
           </ReactFlow>

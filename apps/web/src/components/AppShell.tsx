@@ -18,9 +18,9 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
+    // 暗夜宝库:默认暗色,除非用户显式选择亮色
     const stored = localStorage.getItem('theme')
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    const dark = stored === 'dark' || (!stored && prefersDark)
+    const dark = stored !== 'light'
     setIsDark(dark)
     document.documentElement.classList.toggle('dark', dark)
   }, [])
@@ -51,24 +51,26 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
       </MobileSheet>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 border-b bg-card/80 backdrop-blur-md flex items-center justify-between px-4">
+        <header className="h-16 border-b border-border bg-background/70 backdrop-blur-[12px] flex items-center justify-between px-4">
           <div className="flex items-center gap-3">
             {/* Hamburger — mobile only */}
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden p-2 -ml-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="md:hidden p-3 sm:p-2 -ml-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
               aria-label="打开菜单"
             >
               <Menu className="h-5 w-5" />
             </button>
-            <h1 className="text-xl font-semibold">VibeVault</h1>
+            <h1 className="font-display text-xl font-semibold tracking-tight">
+              <span className="gradient-text">VibeVault</span>
+            </h1>
           </div>
 
           <div className="flex items-center gap-2">
             {/* Dark mode toggle */}
             <button
               onClick={toggleDarkMode}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="p-3 sm:p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
               aria-label={isDark ? '切换亮色模式' : '切换暗色模式'}
             >
               {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
@@ -77,7 +79,7 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
             {/* Settings button */}
             <Link
               href="/app/settings"
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="p-3 sm:p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
               aria-label="设置"
             >
               <Settings className="h-5 w-5" />
@@ -86,12 +88,12 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
             {/* User authentication */}
             {session ? (
               <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                <div className="h-8 w-8 rounded-full bg-muted ring-2 ring-violet/30 flex items-center justify-center">
                   <span className="text-sm font-medium">{session.user?.name?.charAt(0) || 'U'}</span>
                 </div>
                 <button
                   onClick={() => signOut()}
-                  className="px-3 py-1.5 bg-secondary text-secondary-foreground rounded-lg text-sm hover:bg-secondary/80 transition-colors"
+                  className="btn btn-secondary h-8 px-3 text-xs"
                 >
                   登出
                 </button>
@@ -99,7 +101,7 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
             ) : (
               <button
                 onClick={() => signIn(undefined, { callbackUrl: '/app' })}
-                className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm hover:bg-primary/90 transition-colors"
+                className="btn btn-primary h-8 px-3 text-xs"
               >
                 登录
               </button>

@@ -52,7 +52,7 @@ export function MobileSheet({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/50 z-40"
+            className="overlay fixed inset-0 z-40"
             onClick={handleClose}
             aria-hidden="true"
           />
@@ -64,8 +64,8 @@ export function MobileSheet({
             animate={{ x: 0 }}
             exit={{ x: side === 'left' ? '-100%' : '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className={`fixed inset-y-0 z-50 w-72 bg-card text-card-foreground shadow-2xl ${
-              side === 'left' ? 'left-0' : 'right-0'
+            className={`fixed inset-y-0 z-50 w-72 bg-card text-card-foreground shadow-2xl border-border ${
+              side === 'left' ? 'left-0 border-r' : 'right-0 border-l'
             }`}
           >
             {children}
