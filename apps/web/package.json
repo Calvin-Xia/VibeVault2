@@ -6,10 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint src/"
+    "lint": "eslint src/",
+    "test": "vitest run"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.7",
+    "@opennextjs/cloudflare": "^1.14.7",
     "@tanstack/react-virtual": "^3.13.26",
     "@vibevault/db": "workspace:*",
     "framer-motion": "^11.0.0",
@@ -33,6 +35,7 @@
     "eslint-config-next": "^14.1.0",
     "postcss": "^8.4.33",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^3.2.0"
   }
 }

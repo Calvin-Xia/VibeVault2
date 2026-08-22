@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma, Prisma } from '@vibevault/db'
+import { normalizeUrl } from '@/lib/url'
+import { fetchMetadata } from '@/lib/metadata'
 
 export async function createLink(formData: FormData) {
   const session = await getServerSession(authOptions)
@@ -22,28 +24,18 @@ export async function createLink(formData: FormData) {
   }
 
   try {
-    // Validate and normalize URL
-    let normalizedUrl: string
-    let domain: string
-    
-    try {
-      const parsedUrl = new URL(url)
-      if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-        return { success: false, error: 'Only HTTP and HTTPS URLs are allowed' }
-      }
-      normalizedUrl = parsedUrl.toString().split('#')[0]
-      domain = parsedUrl.hostname
-    } catch {
-      return { success: false, error: 'Invalid URL format' }
+    const normalized = normalizeUrl(url)
+    if (!normalized.ok) {
+      return { success: false, error: normalized.error }
     }
 
     // Create link with title and note
     const link = await prisma.link.create({
       data: {
         userId: session.user.id,
-        url,
-        normalizedUrl,
-        domain,
+        url: normalized.url,
+        normalizedUrl: normalized.normalizedUrl,
+        domain: normalized.domain,
         title: title || '',
         note: note || '',
         status: 'INBOX',
@@ -63,11 +55,47 @@ export async function createLink(formData: FormData) {
       }
     })
 
+    // Fire metadata fetch (SSRF-guarded, best effort; failure keeps the link usable)
+    const fetchResult = await fetchMetadata(normalized.url)
+    if (fetchResult.success && fetchResult.metadata) {
+      const m = fetchResult.metadata
+      await prisma.link.update({
+        where: { id: link.id },
+        data: {
+          title: title || m.title || '',
+          description: m.description ?? undefined,
+          ogImage: m.ogImage ?? undefined,
+          favicon: m.favicon ?? undefined,
+          siteName: m.siteName ?? undefined,
+          publishedTime: m.publishedTime ? new Date(m.publishedTime) : undefined,
+          metadataStatus: 'READY',
+          metadataError: null,
+        },
+      })
+    } else {
+      await prisma.link.update({
+        where: { id: link.id },
+        data: {
+          metadataStatus: 'FAILED',
+          metadataError: fetchResult.error || 'Unknown error',
+        },
+      })
+    }
+
     // Revalidate dashboard page and all related pages
     revalidatePath('/app')
     revalidatePath('/app/graph')
 
-    return { success: true, link }
+    const updatedLink = await prisma.link.findUnique({
+      where: { id: link.id },
+      include: {
+        linkTags: {
+          include: { tag: true },
+        },
+      },
+    })
+
+    return { success: true, link: updatedLink ?? link }
   } catch (error) {
     console.error('Error creating link:', error)
     return { success: false, error: 'Failed to create link' }
@@ -318,5 +346,62 @@ export async function deleteLink(linkId: string) {
   } catch (error) {
     console.error('Error deleting link:', error)
     return { success: false, error: 'Failed to delete link' }
+  }
+}
+
+export async function retryLinkMetadata(linkId: string) {
+  const session = await getServerSession(authOptions)
+
+  if (!session || !session.user) {
+    return { success: false, error: 'User not authenticated' }
+  }
+
+  try {
+    const link = await prisma.link.findUnique({
+      where: { id: linkId, userId: session.user.id },
+    })
+
+    if (!link) {
+      return { success: false, error: 'Link not found' }
+    }
+
+    const fetchResult = await fetchMetadata(link.url)
+
+    if (fetchResult.success && fetchResult.metadata) {
+      const m = fetchResult.metadata
+      const updated = await prisma.link.update({
+        where: { id: linkId },
+        data: {
+          title: m.title ?? undefined,
+          description: m.description ?? undefined,
+          ogImage: m.ogImage ?? undefined,
+          favicon: m.favicon ?? undefined,
+          siteName: m.siteName ?? undefined,
+          publishedTime: m.publishedTime ? new Date(m.publishedTime) : undefined,
+          metadataStatus: 'READY',
+          metadataError: null,
+        },
+        include: {
+          linkTags: { include: { tag: true } },
+          visits: { orderBy: { visitedAt: 'desc' }, take: 10 },
+        },
+      })
+      revalidatePath('/app')
+      revalidatePath(`/app/link/${linkId}`)
+      return { success: true, link: updated }
+    }
+
+    await prisma.link.update({
+      where: { id: linkId },
+      data: {
+        metadataStatus: 'FAILED',
+        metadataError: fetchResult.error || 'Unknown error',
+      },
+    })
+    revalidatePath(`/app/link/${linkId}`)
+    return { success: false, error: fetchResult.error || 'Failed to fetch metadata' }
+  } catch (error) {
+    console.error('Error retrying metadata:', error)
+    return { success: false, error: 'Failed to fetch metadata' }
   }
 }

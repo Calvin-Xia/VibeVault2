@@ -15,7 +15,7 @@ import {
   Tag,
   Trash2,
 } from 'lucide-react'
-import { getLink, updateLink, deleteLink, addTagToLink, removeTagFromLink } from '@/actions/linkActions'
+import { getLink, updateLink, deleteLink, addTagToLink, removeTagFromLink, retryLinkMetadata } from '@/actions/linkActions'
 import { listTags } from '@/actions/tagActions'
 import { Link, Tag as TagType, LinkStatus } from '@/types/link'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -40,6 +40,7 @@ function LinkDetail() {
   const [availableTags, setAvailableTags] = useState<TagType[]>([])
   const [showTagManager, setShowTagManager] = useState(false)
   const [isLoadingTags, setIsLoadingTags] = useState(false)
+  const [isRetryingMetadata, setIsRetryingMetadata] = useState(false)
 
   useEffect(() => {
     const fetchLink = async () => {
@@ -161,6 +162,24 @@ function LinkDetail() {
       }
     } catch {
       toast.error('标签操作失败，请重试')
+    }
+  }
+
+  const handleRetryMetadata = async () => {
+    if (!link || isRetryingMetadata) return
+    setIsRetryingMetadata(true)
+    try {
+      const result = await retryLinkMetadata(link.id)
+      if (result.success && result.link) {
+        setLink(result.link as unknown as Link)
+        toast.success('元数据已更新')
+      } else {
+        toast.error(result.error || '抓取失败')
+      }
+    } catch {
+      toast.error('抓取失败，请重试')
+    } finally {
+      setIsRetryingMetadata(false)
     }
   }
 
@@ -408,6 +427,15 @@ function LinkDetail() {
                 <span className="text-muted-foreground">元数据状态</span>
                 <p className="text-foreground">
                   {link.metadataStatus === 'READY' ? '已就绪' : link.metadataStatus === 'PENDING' ? '等待中' : '失败'}
+                  {link.metadataStatus === 'FAILED' && (
+                    <button
+                      onClick={handleRetryMetadata}
+                      disabled={isRetryingMetadata}
+                      className="ml-2 px-2 py-0.5 rounded-full text-xs font-medium border border-border hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
+                    >
+                      {isRetryingMetadata ? '抓取中...' : '重试抓取'}
+                    </button>
+                  )}
                 </p>
               </div>
             </div>

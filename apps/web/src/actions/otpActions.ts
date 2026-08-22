@@ -3,6 +3,7 @@
 import crypto from 'crypto'
 import { prisma } from '@vibevault/db'
 import resend from '@/lib/resend'
+import { hashCode } from '@/lib/otp'
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 
@@ -10,11 +11,6 @@ const OTP_EXPIRY_MINUTES = 5
 const MAX_ATTEMPTS = 5
 const MAX_SENDS_PER_WINDOW = 5
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000
-
-function hashCode(code: string): string {
-  const pepper = process.env.OTP_PEPPER || 'vibevault-default-pepper-change-in-production'
-  return crypto.createHash('sha256').update(pepper + code).digest('hex')
-}
 
 function checkRateLimit(email: string): { allowed: boolean; retryAfterMs?: number } {
   const now = Date.now()
