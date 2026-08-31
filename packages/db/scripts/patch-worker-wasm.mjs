@@ -26,7 +26,8 @@ const generatedDir = join(dirname(clientPkgJson), '..', '..', '.prisma', 'client
 const wasmSource = join(generatedDir, 'query_compiler_bg.wasm')
 
 const IMPORT_NAME = '__query_compiler_wasm'
-const PROP = 'getQueryCompilerWasmModule:'
+// 只匹配"属性定义"形态(调用点 getQueryCompilerWasmModule() 无冒号,会被排除)
+const DEF_RE = /getQueryCompilerWasmModule\s*:\s*(?:async\s*)?\(\s*\)\s*=>\s*\{/g
 
 function* walkJsFiles(dir) {
   for (const name of readdirSync(dir)) {
@@ -47,13 +48,11 @@ function patchFile(filePath) {
 
   let patched = 0
   for (;;) {
-    const idx = source.indexOf(PROP)
-    if (idx === -1) break
-    const bodyStart = source.indexOf('{', idx + PROP.length)
-    if (bodyStart === -1) {
-      console.error('[patch-worker-wasm] cannot find loader body')
-      process.exit(1)
-    }
+    DEF_RE.lastIndex = 0
+    const m = DEF_RE.exec(source)
+    if (!m) break
+    // bodyStart 指向匹配尾部 '{' 的位置
+    const bodyStart = m.index + m[0].length - 1
     // 花括号配对扫描(此函数体内的字符串字面量不含花括号)
     let depth = 0
     let bodyEnd = -1
@@ -73,8 +72,9 @@ function patchFile(filePath) {
       process.exit(1)
     }
     source =
-      source.slice(0, idx) +
-      `${PROP} async () => ${IMPORT_NAME}` +
+      source.slice(0, m.index) +
+      'getQueryCompilerWasmModule: async () => ' +
+      IMPORT_NAME +
       source.slice(bodyEnd + 1)
     patched++
   }
