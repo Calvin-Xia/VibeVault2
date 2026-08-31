@@ -20,14 +20,14 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel = '确认',
+  cancelLabel = '取消',
   onConfirm,
   isConfirming = false,
   variant = 'default',
 }: ConfirmDialogProps) {
-  const dialogRef = useRef<HTMLDivElement>(null)
-  const confirmButtonRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const cancelButtonRef = useRef<HTMLButtonElement>(null)
 
   const handleClose = useCallback(() => {
     if (!isConfirming) {
@@ -35,26 +35,51 @@ export function ConfirmDialog({
     }
   }, [isConfirming, onOpenChange])
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
+  // 焦点管理:打开时聚焦取消按钮,关闭/卸载时恢复打开前的焦点
+  useEffect(() => {
+    if (!open) return
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
+    cancelButtonRef.current?.focus()
+    return () => {
+      previouslyFocused?.focus()
+    }
+  }, [open])
+
+  // 键盘交互仅绑定在面板上:Escape 关闭;Tab 在面板内循环(焦点陷阱)。
+  // Enter 由按钮原生处理,不再有全局 Enter 直接触发 onConfirm 的行为。
+  const handlePanelKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
       if (e.key === 'Escape') {
+        e.stopPropagation()
         handleClose()
+        return
       }
-      if (e.key === 'Enter' && !isConfirming) {
+      if (e.key !== 'Tab') return
+
+      const panel = panelRef.current
+      if (!panel) return
+      const focusable = Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      )
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const active = document.activeElement
+      if (e.shiftKey) {
+        if (active === first || !(active instanceof Node) || !panel.contains(active)) {
+          e.preventDefault()
+          last.focus()
+        }
+      } else if (active === last || !(active instanceof Node) || !panel.contains(active)) {
         e.preventDefault()
-        onConfirm()
+        first.focus()
       }
     },
-    [handleClose, onConfirm, isConfirming]
+    [handleClose]
   )
-
-  useEffect(() => {
-    if (open) {
-      document.addEventListener('keydown', handleKeyDown)
-      confirmButtonRef.current?.focus()
-      return () => document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [open, handleKeyDown])
 
   if (!open) return null
 
@@ -64,21 +89,24 @@ export function ConfirmDialog({
       onClick={handleClose}
     >
       <div
-        ref={dialogRef}
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-description"
-        className="panel relative bg-card text-card-foreground rounded-xl shadow-2xl p-6 max-w-sm w-full"
+        className="panel relative bg-card text-card-foreground rounded-2xl shadow-2xl p-6 max-w-sm w-full"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={handlePanelKeyDown}
       >
-        <button
-          onClick={handleClose}
-          aria-label="Close dialog"
-          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <div className="absolute top-1.5 right-1.5">
+          <button
+            onClick={handleClose}
+            aria-label="关闭"
+            className="p-3 text-muted-foreground hover:text-foreground hover:bg-accent rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
         <div className="text-center mb-4">
           <div
@@ -113,6 +141,7 @@ export function ConfirmDialog({
 
         <div className="flex gap-3">
           <button
+            ref={cancelButtonRef}
             onClick={handleClose}
             disabled={isConfirming}
             className="btn btn-secondary flex-1"
@@ -120,14 +149,13 @@ export function ConfirmDialog({
             {cancelLabel}
           </button>
           <button
-            ref={confirmButtonRef}
             onClick={onConfirm}
             disabled={isConfirming}
             className={`btn flex-1 ${
               variant === 'danger' ? 'btn-destructive' : 'btn-primary'
             }`}
           >
-            {isConfirming ? 'Processing...' : confirmLabel}
+            {isConfirming ? '处理中...' : confirmLabel}
           </button>
         </div>
       </div>

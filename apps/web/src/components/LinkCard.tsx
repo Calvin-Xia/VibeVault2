@@ -11,6 +11,7 @@ import { listTags } from '@/actions/tagActions'
 import { Link, Tag } from '@/types/link'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import TagManager from '@/components/ui/TagManager'
+import { DEFAULT_TAG_COLOR, tagTextColor } from '@/lib/tagColor'
 
 interface LinkCardProps {
   link: Link
@@ -29,6 +30,8 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
   const [isLoadingTags, setIsLoadingTags] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isFavoritePending, setIsFavoritePending] = useState(false)
+  const [isArchivePending, setIsArchivePending] = useState(false)
 
   // Spotlight 聚光灯:pointermove + rAF 节流,仅 hover 设备启用(见 DESIGN.md)
   useEffect(() => {
@@ -52,22 +55,30 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
   }, [])
 
   const handleFavorite = async () => {
+    if (isFavoritePending) return
     try {
+      setIsFavoritePending(true)
       await updateLink(link.id, { favorite: !link.favorite })
       toast.success(link.favorite ? '已取消收藏' : '已收藏')
       router.refresh()
     } catch {
       toast.error('操作失败')
+    } finally {
+      setIsFavoritePending(false)
     }
   }
 
   const handleArchive = async () => {
+    if (isArchivePending) return
     try {
+      setIsArchivePending(true)
       await updateLink(link.id, { status: 'ARCHIVED' })
       toast.success('已归档')
       router.refresh()
     } catch {
       toast.error('操作失败')
+    } finally {
+      setIsArchivePending(false)
     }
   }
 
@@ -129,7 +140,7 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
   }
 
   const actionBtnClass =
-    'p-3.5 sm:p-1.5 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors'
+    'p-3.5 lg:p-1.5 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors'
 
   return (
     <>
@@ -147,7 +158,7 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
 
       <motion.div ref={cardRef} className="card">
         {link.ogImage && (
-          <div className="card-cover-wrap relative bg-muted">
+          <div className="card-cover-wrap relative aspect-video bg-muted">
             <Image src={link.ogImage} alt={link.title} fill className="card-cover object-cover" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
           </div>
         )}
@@ -182,7 +193,8 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
             </div>
             <button
               onClick={handleFavorite}
-              className={`p-3.5 sm:p-1.5 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              disabled={isFavoritePending}
+              className={`p-3.5 lg:p-1.5 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 link.favorite
                   ? 'text-warning hover:bg-warning/10'
                   : 'text-muted-foreground hover:bg-secondary'
@@ -223,7 +235,7 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
                 <span
                   key={tag.id}
                   className="px-2 py-0.5 rounded-full text-xs font-medium"
-                  style={{ backgroundColor: `${tag.color || '#8b5cf6'}20`, color: tag.color || '#8b5cf6' }}
+                  style={{ backgroundColor: `${tag.color || DEFAULT_TAG_COLOR}20`, color: tagTextColor(tag.color) }}
                 >
                   {tag.name}
                 </span>
@@ -249,18 +261,20 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
               </>
             ) : (
               <>
-                <button
-                  onClick={() => window.open(link.url, '_blank', 'noopener,noreferrer')}
-                  className="flex items-center gap-1 text-sm font-medium text-violet hover:text-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded transition-colors"
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-violet hover:text-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded transition-colors"
                 >
                   <ExternalLink className="w-4 h-4" />
                   <span>打开</span>
-                </button>
+                </a>
                 <div className="flex gap-1">
                   <button className={actionBtnClass} onClick={() => setIsEditing(true)} aria-label="编辑">
                     <Pencil className="w-4 h-4" />
                   </button>
-                  <button className={actionBtnClass} onClick={handleArchive} aria-label="归档">
+                  <button className={actionBtnClass} onClick={handleArchive} disabled={isArchivePending} aria-label="归档">
                     <Archive className="w-4 h-4" />
                   </button>
                   <button className={actionBtnClass} onClick={handleLoadTags} aria-label="添加标签">

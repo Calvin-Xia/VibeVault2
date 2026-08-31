@@ -35,9 +35,16 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
   }, [])
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background">
+    <div className="flex h-dvh overflow-hidden bg-background">
+      {/* Skip link:键盘用户直达主内容 */}
+      <a
+        href="#content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-primary focus:text-primary-foreground focus:text-sm focus:font-medium focus:shadow-lg"
+      >
+        跳到主内容
+      </a>
       {/* Desktop sidebar — hidden on mobile */}
-      <aside className="hidden md:block">
+      <aside className="hidden lg:block">
         <Suspense fallback={<Skeleton className="w-64 h-full" />}>
           <Sidebar />
         </Suspense>
@@ -56,14 +63,14 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
             {/* Hamburger — mobile only */}
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden p-3 sm:p-2 -ml-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+              className="lg:hidden p-3 sm:p-2 -ml-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
               aria-label="打开菜单"
             >
               <Menu className="h-5 w-5" />
             </button>
-            <h1 className="font-display text-xl font-semibold tracking-tight">
+            <div className="font-display text-xl font-semibold tracking-tight">
               <span className="gradient-text">VibeVault</span>
-            </h1>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -108,7 +115,7 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
             )}
           </div>
         </header>
-        <main className="flex-1 overflow-hidden">
+        <main id="content" tabIndex={-1} className="flex-1 overflow-hidden">
           {children}
         </main>
       </div>

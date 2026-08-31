@@ -6,6 +6,8 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { listLinks } from '@/actions/linkActions'
 import { authOptions } from '@/lib/auth'
 
+export const metadata = { title: '全部链接' }
+
 function DashboardGridSkeleton() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -50,11 +52,11 @@ async function Dashboard({ searchParams }: { searchParams: Promise<Record<string
       <Suspense fallback={<div className="h-16 border-b border-border bg-card/60" />}>
         <FilterBar />
       </Suspense>
-      <main className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6">
         <Suspense fallback={<DashboardGridSkeleton />}>
           <LinksGrid searchParams={searchParams} />
         </Suspense>
-      </main>
+      </div>
     </div>
   )
 }

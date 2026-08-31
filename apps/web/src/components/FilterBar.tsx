@@ -6,6 +6,7 @@ import { createLink } from '@/actions/linkActions'
 import { listTags } from '@/actions/tagActions'
 import { toast } from 'sonner'
 import { Search, Plus, LayoutGrid, GitBranch, ChevronDown } from 'lucide-react'
+import { DEFAULT_TAG_COLOR, tagTextColor } from '@/lib/tagColor'
 
 const FilterBar: React.FC = () => {
   const pathname = usePathname()
@@ -131,7 +132,9 @@ const FilterBar: React.FC = () => {
 
         {/* Sort select */}
         <div className="flex items-center gap-2">
-          <label htmlFor="sort" className="text-sm font-medium text-muted-foreground hidden md:inline-block">排序：</label>
+          {/* 移动端无可见文案,由 sr-only label 关联(仅此一个 label 关联控件) */}
+          <label htmlFor="sort" className="sr-only">排序</label>
+          <label aria-hidden="true" className="text-sm font-medium text-muted-foreground hidden md:inline-block">排序：</label>
           <div className="relative">
             <select
               id="sort"
@@ -170,10 +173,11 @@ const FilterBar: React.FC = () => {
           })}
         </div>
 
-        {/* Add link button */}
-        <button 
-          className="btn btn-primary"
+        {/* Add link button(桌面端;移动端由 FAB 承担) */}
+        <button
+          className="btn btn-primary !hidden md:!inline-flex"
           onClick={() => setShowAddForm(!showAddForm)}
+          aria-expanded={showAddForm}
         >
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">添加链接</span>
@@ -182,9 +186,10 @@ const FilterBar: React.FC = () => {
 
       {/* 移动端悬浮添加入口(≥48px 触摸目标,见 DESIGN.md) */}
       <button
-        className="fab-add md:hidden"
+        className="fab-add md:!hidden"
         onClick={() => setShowAddForm(!showAddForm)}
         aria-label="添加链接"
+        aria-expanded={showAddForm}
       >
         <Plus className="h-5 w-5" />
       </button>
@@ -243,10 +248,11 @@ const FilterBar: React.FC = () => {
                     <button
                       key={tag.id}
                       type="button"
+                      aria-pressed={selectedTags.includes(tag.id)}
                       className="chip focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       style={
                         selectedTags.includes(tag.id)
-                          ? { backgroundColor: tag.color || '#8b5cf6', color: 'white' }
+                          ? { backgroundColor: tag.color || DEFAULT_TAG_COLOR, color: tagTextColor(tag.color) }
                           : { backgroundColor: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }
                       }
                       onClick={() => {
@@ -281,7 +287,7 @@ const FilterBar: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="btn btn-primary disabled:opacity-70 disabled:cursor-not-allowed"
+                className="btn btn-primary"
               >
                 {isSubmitting ? '添加中...' : '添加'}
               </button>

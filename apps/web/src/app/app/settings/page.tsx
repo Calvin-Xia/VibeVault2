@@ -4,9 +4,12 @@ import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { Pencil, Trash2, Save, X, Upload, Download, Tag } from 'lucide-react'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { exportData, importData } from '@/actions/exportActions'
 import { listTags, deleteTag, updateTag, createTag } from '@/actions/tagActions'
 import { Reveal } from '@/components/Reveal'
+import { DEFAULT_TAG_COLOR } from '@/lib/tagColor'
 
 function Settings() {
   const [isExporting, setIsExporting] = useState(false)
@@ -19,8 +22,10 @@ function Settings() {
   // Add tag state
   const [showAddTagForm, setShowAddTagForm] = useState(false)
   const [newTagName, setNewTagName] = useState('')
-  const [newTagColor, setNewTagColor] = useState('#8b5cf6')
+  const [newTagColor, setNewTagColor] = useState(DEFAULT_TAG_COLOR)
   const [isCreatingTag, setIsCreatingTag] = useState(false)
+  const [deletingTag, setDeletingTag] = useState<{ id: string; name: string } | null>(null)
+  const [isDeletingTag, setIsDeletingTag] = useState(false)
 
   const handleExport = async () => {
     try {
@@ -89,6 +94,17 @@ function Settings() {
     }
   }
 
+  const confirmDeleteTag = async () => {
+    if (!deletingTag) return
+    try {
+      setIsDeletingTag(true)
+      await handleDeleteTag(deletingTag.id)
+    } finally {
+      setIsDeletingTag(false)
+      setDeletingTag(null)
+    }
+  }
+
   const handleStartEditTag = (tag: { id: string; name: string; color: string | null }) => {
     setEditingTag(tag)
   }
@@ -136,7 +152,7 @@ function Settings() {
       if (result.success && result.tag) {
         setTags(prev => [...prev, result.tag])
         setNewTagName('')
-        setNewTagColor('#8b5cf6')
+        setNewTagColor(DEFAULT_TAG_COLOR)
         setShowAddTagForm(false)
         toast.success('标签已创建')
       } else {
@@ -202,7 +218,20 @@ function Settings() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-[960px] mx-auto">
+      <ConfirmDialog
+        open={deletingTag !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeletingTag(null)
+        }}
+        title="删除标签"
+        description={`确定要删除标签「${deletingTag?.name ?? ''}」吗？该标签将从所有链接上移除（链接本身不受影响），此操作无法撤销。`}
+        confirmLabel="删除"
+        cancelLabel="取消"
+        onConfirm={confirmDeleteTag}
+        isConfirming={isDeletingTag}
+        variant="danger"
+      />
       <Reveal as="h1" className="text-2xl font-semibold mb-6 text-foreground">设置</Reveal>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* 导入导出 */}
@@ -211,8 +240,8 @@ function Settings() {
           
           <div className="space-y-4">
             {/* Export */}
-            <button 
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed"
+            <button
+              className="btn btn-primary w-full"
               onClick={handleExport}
               disabled={isExporting}
             >
@@ -227,18 +256,19 @@ function Settings() {
                 accept=".json"
                 onChange={handleFileChange}
                 className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground"
+                aria-label="选择要导入的 JSON 文件"
               />
               <div className="flex gap-2">
-                <button 
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed"
+                <button
+                  className="btn btn-secondary flex-1"
                   onClick={handleImport}
                   disabled={isImporting || !importFile}
                 >
                   <Upload className="h-4 w-4" />
                   {isImporting ? '导入中...' : '导入数据'}
                 </button>
-                <button 
-                  className="flex items-center justify-center gap-1 px-4 py-2 bg-muted text-muted-foreground rounded-lg hover:opacity-90 transition-opacity"
+                <button
+                  className="btn btn-secondary"
                   onClick={() => setImportFile(null)}
                   disabled={isImporting}
                 >
@@ -268,7 +298,11 @@ function Settings() {
               <Skeleton className="h-8 w-28 rounded-full" />
             </div>
           ) : tags.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">暂无标签</div>
+            <EmptyState
+              icon={<Tag className="h-10 w-10 text-muted-foreground" />}
+              title="暂无标签"
+              description="创建标签来整理你的链接"
+            />
           ) : (
             <div className="space-y-2">
               {tags.map((tag) => (
@@ -280,53 +314,59 @@ function Settings() {
                         className="flex-1 px-2 py-1 text-sm bg-background border border-border rounded text-foreground"
                         value={editingTag.name}
                         onChange={(e) => setEditingTag({ ...editingTag, name: e.target.value })}
+                        aria-label="标签名称"
                       />
                       <input
                         type="color"
                         className="w-6 h-6 rounded border border-border cursor-pointer"
-                        value={editingTag.color || '#8b5cf6'}
+                        value={editingTag.color || DEFAULT_TAG_COLOR}
                         onChange={(e) => setEditingTag({ ...editingTag, color: e.target.value })}
+                        aria-label="标签颜色"
                       />
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: tag.color || '#8b5cf6' }}></span>
+                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: tag.color || DEFAULT_TAG_COLOR }}></span>
                       <span className="text-foreground">{tag.name}</span>
                     </div>
                   )}
                   <div className="flex gap-2">
                     {editingTag?.id === tag.id ? (
                       <>
-                        <button 
+                        <button
                           className="text-success hover:text-success/80"
                           onClick={handleSaveEditTag}
                           disabled={isSubmitting}
                           title="保存"
+                          aria-label="保存"
                         >
                           <Save className="h-4 w-4" />
                         </button>
-                        <button 
+                        <button
                           className="text-muted-foreground hover:text-foreground"
                           onClick={handleCancelEditTag}
                           disabled={isSubmitting}
                           title="取消"
+                          aria-label="取消"
                         >
                           <X className="h-4 w-4" />
                         </button>
                       </>
                     ) : (
                       <>
-                        <button 
+                        <button
                           className="text-muted-foreground hover:text-foreground"
                           onClick={() => handleStartEditTag(tag)}
                           title="编辑"
+                          aria-label="编辑"
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
-                        <button 
+                        <button
                           className="text-muted-foreground hover:text-destructive"
-                          onClick={() => handleDeleteTag(tag.id)}
+                          onClick={() => setDeletingTag({ id: tag.id, name: tag.name })}
                           title="删除"
+                          aria-label="删除"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -346,18 +386,20 @@ function Settings() {
                   onChange={(e) => setNewTagName(e.target.value)}
                   placeholder="标签名称"
                   className="flex-1 px-3 py-2 bg-muted border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
+                  aria-label="标签名称"
                 />
                 <input
                   type="color"
                   value={newTagColor}
                   onChange={(e) => setNewTagColor(e.target.value)}
                   className="w-10 h-10 rounded-full cursor-pointer border-2 border-border"
+                  aria-label="标签颜色"
                 />
                 <div className="flex gap-2">
                   <button
                     onClick={handleAddTag}
                     disabled={isCreatingTag}
-                    className="flex items-center gap-1 px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="btn btn-primary"
                   >
                     <Save className="h-4 w-4" />
                     创建
@@ -366,9 +408,9 @@ function Settings() {
                     onClick={() => {
                       setShowAddTagForm(false)
                       setNewTagName('')
-                      setNewTagColor('#8b5cf6')
+                      setNewTagColor(DEFAULT_TAG_COLOR)
                     }}
-                    className="flex items-center gap-1 px-3 py-2 bg-secondary text-secondary-foreground rounded-lg hover:opacity-90 transition-opacity"
+                    className="btn btn-secondary"
                   >
                     <X className="h-4 w-4" />
                     取消
@@ -379,7 +421,7 @@ function Settings() {
           ) : (
             <button
               onClick={() => setShowAddTagForm(true)}
-              className="w-full mt-4 px-4 py-2 bg-muted text-muted-foreground rounded-lg hover:opacity-90 transition-opacity text-center"
+              className="btn btn-secondary w-full mt-4"
             >
               + 添加标签
             </button>

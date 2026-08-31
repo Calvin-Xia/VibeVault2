@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { AlertTriangle } from 'lucide-react'
 
 export default function Error({
   error,
@@ -15,8 +16,8 @@ export default function Error({
 
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <div className="glass card rounded-2xl p-8 max-w-md w-full text-center">
-        <div className="text-6xl mb-4">⚠️</div>
+      <div className="glass card rounded-2xl p-8 max-w-md w-full text-center" role="alert">
+        <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-destructive" aria-hidden="true" />
         <h2 className="text-xl font-semibold mb-2">出现了一些问题</h2>
         <p className="text-muted-foreground mb-6">
           发生了未知错误，请稍后重试

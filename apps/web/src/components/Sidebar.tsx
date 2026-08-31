@@ -4,7 +4,9 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { Inbox, BookOpen, CheckCircle, Folder, Plus } from 'lucide-react'
+import { toast } from 'sonner'
 import { listTags, createTag } from '@/actions/tagActions'
+import { DEFAULT_TAG_COLOR, tagTextColor } from '@/lib/tagColor'
 
 interface SidebarProps {
   statusCounts?: { inbox: number; reading: number; archived: number }
@@ -17,7 +19,7 @@ const Sidebar: React.FC<SidebarProps> = ({ statusCounts, onClose }) => {
   const [tags, setTags] = useState<Array<{ id: string; name: string; color: string | null; count: number }>>([])
   const [showAddTagForm, setShowAddTagForm] = useState(false)
   const [tagName, setTagName] = useState('')
-  const [tagColor, setTagColor] = useState('#8b5cf6')
+  const [tagColor, setTagColor] = useState(DEFAULT_TAG_COLOR)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const statusFilters = [
@@ -50,9 +52,11 @@ const Sidebar: React.FC<SidebarProps> = ({ statusCounts, onClose }) => {
       if (result.success && result.tag) {
         setTags(prev => [...prev, { ...result.tag, count: 0 }])
         setTagName('')
-        setTagColor('#8b5cf6')
+        setTagColor(DEFAULT_TAG_COLOR)
         setShowAddTagForm(false)
       }
+    } catch {
+      toast.error('创建标签失败')
     } finally {
       setIsSubmitting(false)
     }
@@ -74,7 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ statusCounts, onClose }) => {
                 href={`/app?status=${status.id}`}
                 onClick={() => onClose?.()}
                 data-active={isStatusActive(status.id)}
-                className={`nav-item ${isStatusActive(status.id) ? '' : ''}`}
+                className="nav-item"
               >
                 <status.icon className="h-4 w-4" />
                 <span>{status.name}</span>
@@ -113,8 +117,8 @@ const Sidebar: React.FC<SidebarProps> = ({ statusCounts, onClose }) => {
                 href={`/app?tag=${tag.id}`}
                 onClick={() => onClose?.()}
                 data-active={pathname === '/app' && searchParams.get('tag') === tag.id}
-                className="chip"
-                style={{ backgroundColor: `${tag.color || '#8b5cf6'}20`, color: tag.color || '#8b5cf6' }}
+                className="chip min-h-[36px]"
+                style={{ backgroundColor: `${tag.color || DEFAULT_TAG_COLOR}20`, color: tagTextColor(tag.color) }}
               >
                 {tag.name} <span className="opacity-70">({tag.count})</span>
               </Link>
@@ -131,12 +135,14 @@ const Sidebar: React.FC<SidebarProps> = ({ statusCounts, onClose }) => {
                   className="input flex-1 h-9 rounded-full text-xs"
                   value={tagName}
                   onChange={(e) => setTagName(e.target.value)}
+                  aria-label="标签名称"
                 />
                 <input
                   type="color"
                   className="w-9 h-9 rounded-full border border-input bg-transparent cursor-pointer"
                   value={tagColor}
                   onChange={(e) => setTagColor(e.target.value)}
+                  aria-label="标签颜色"
                 />
               </div>
               <div className="flex gap-2">

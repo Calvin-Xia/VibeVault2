@@ -1,7 +1,8 @@
 'use client'
 
-import { X } from 'lucide-react'
+import { X, Tag as TagIcon } from 'lucide-react'
 import { Tag } from '@/types/link'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 interface TagManagerProps {
   availableTags: Tag[]
@@ -52,9 +53,11 @@ export default function TagManager({
           <SkeletonPill />
         </div>
       ) : availableTags.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-2">
-          暂无标签
-        </p>
+        <EmptyState
+          icon={<TagIcon className="h-8 w-8 text-muted-foreground" />}
+          title="暂无标签"
+          description="先在设置或侧边栏创建标签"
+        />
       ) : (
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="可用标签">
           {availableTags.map((tag) => {
@@ -66,7 +69,7 @@ export default function TagManager({
                 aria-pressed={isAssigned}
                 aria-label={`${isAssigned ? '移除' : '添加'}标签 ${tag.name}`}
                 className={`
-                  px-2.5 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer
+                  px-2.5 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer
                   ${
                     isAssigned
                       ? 'bg-primary text-primary-foreground'

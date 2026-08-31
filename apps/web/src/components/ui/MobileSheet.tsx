@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface MobileSheetProps {
@@ -16,6 +16,8 @@ export function MobileSheet({
   children,
   side = 'left',
 }: MobileSheetProps) {
+  const panelRef = useRef<HTMLDivElement>(null)
+
   const handleClose = useCallback(() => {
     onOpenChange(false)
   }, [onOpenChange])
@@ -27,6 +29,20 @@ export function MobileSheet({
       return () => {
         document.body.style.overflow = originalOverflow
       }
+    }
+  }, [open])
+
+  // 焦点管理:打开时聚焦面板内第一个可聚焦元素,关闭时恢复之前的焦点
+  useEffect(() => {
+    if (!open) return
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const firstFocusable = panelRef.current?.querySelector<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+    firstFocusable?.focus()
+    return () => {
+      previouslyFocused?.focus()
     }
   }, [open])
 
@@ -52,19 +68,21 @@ export function MobileSheet({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="overlay fixed inset-0 z-40"
+            className="overlay fixed inset-0 z-50"
             onClick={handleClose}
             aria-hidden="true"
           />
 
           <motion.div
+            ref={panelRef}
             role="dialog"
             aria-modal="true"
+            aria-label="导航菜单"
             initial={{ x: side === 'left' ? '-100%' : '100%' }}
             animate={{ x: 0 }}
             exit={{ x: side === 'left' ? '-100%' : '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className={`fixed inset-y-0 z-50 w-72 bg-card text-card-foreground shadow-2xl border-border ${
+            className={`fixed inset-y-0 z-50 w-64 bg-card text-card-foreground shadow-2xl border-border ${
               side === 'left' ? 'left-0 border-r' : 'right-0 border-l'
             }`}
           >

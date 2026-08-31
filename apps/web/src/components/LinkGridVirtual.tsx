@@ -109,7 +109,7 @@ const LinkGridVirtual: React.FC<LinkGridVirtualProps> = ({ links }) => {
         </div>
         <h3 className="text-xl font-medium mb-1">暂无链接</h3>
         <p className="text-muted-foreground">
-          点击右上角的&quot;添加链接&quot;按钮开始收藏链接吧
+          点击&quot;添加链接&quot;按钮开始收藏
         </p>
       </div>
     )
@@ -118,7 +118,7 @@ const LinkGridVirtual: React.FC<LinkGridVirtualProps> = ({ links }) => {
   return (
     <div
       ref={parentRef}
-      className="h-[calc(100vh-12rem)] overflow-y-auto pr-2"
+      className="h-[calc(100dvh-12rem)] overflow-y-auto pr-2"
       style={{ contain: 'strict' }}
     >
       <div
@@ -127,7 +127,18 @@ const LinkGridVirtual: React.FC<LinkGridVirtualProps> = ({ links }) => {
       >
         {virtualizer.getVirtualItems().map((virtualRow) => {
           const link = sortedLinks[virtualRow.index]
-          return (
+          // 仅首批 12 行做入场动画,其余行渲染普通 div(见 DESIGN.md 性能红线)
+          const animate = virtualRow.index < 12
+          const rowStyle = {
+            top: `${virtualRow.start}px`,
+            height: `${virtualRow.size}px`,
+          }
+          const rowContent = (
+            <div className="pb-4">
+              <LinkCard link={link} />
+            </div>
+          )
+          return animate ? (
             <motion.div
               key={link.id}
               initial={{ opacity: 0, y: 20 }}
@@ -135,21 +146,25 @@ const LinkGridVirtual: React.FC<LinkGridVirtualProps> = ({ links }) => {
               transition={{
                 duration: 0.5,
                 ease: [0.16, 1, 0.3, 1],
-                // 仅首批卡片做 stagger 入场,后续滚动入场即时(见 DESIGN.md 性能红线)
-                delay: virtualRow.index < 12 ? virtualRow.index * 0.04 : 0,
+                delay: virtualRow.index * 0.04,
               }}
               className="absolute left-0 right-0"
-              style={{
-                top: `${virtualRow.start}px`,
-                height: `${virtualRow.size}px`,
-              }}
+              style={rowStyle}
               data-index={virtualRow.index}
               ref={virtualizer.measureElement}
             >
-              <div className="pb-4">
-                <LinkCard link={link} />
-              </div>
+              {rowContent}
             </motion.div>
+          ) : (
+            <div
+              key={link.id}
+              className="absolute left-0 right-0"
+              style={rowStyle}
+              data-index={virtualRow.index}
+              ref={virtualizer.measureElement}
+            >
+              {rowContent}
+            </div>
           )
         })}
       </div>

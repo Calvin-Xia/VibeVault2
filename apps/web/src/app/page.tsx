@@ -122,6 +122,9 @@ export default function SignInPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center p-4">
+      <p role="status" aria-live="polite" className="sr-only">
+        {step === 'otp' ? '验证码已发送' : ''}
+      </p>
       <motion.div
         initial={{ opacity: 0, y: 24, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -160,13 +163,15 @@ export default function SignInPage() {
                 placeholder="your@email.com"
                 required
                 autoFocus
+                autoComplete="email"
+                enterKeyHint="send"
                 className="input h-11"
               />
             </div>
 
             {error && (
               <div className="rounded-lg border border-destructive/35 bg-destructive/10 px-4 py-3">
-                <p className="text-sm text-destructive">{error}</p>
+                <p className="text-sm text-destructive" role="alert">{error}</p>
               </div>
             )}
 
@@ -203,13 +208,14 @@ export default function SignInPage() {
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
                 placeholder="000000"
                 required
+                autoComplete="one-time-code"
                 className="input h-11 text-center text-2xl tracking-[0.5em] font-mono"
               />
             </div>
 
             {error && (
               <div className="rounded-lg border border-destructive/35 bg-destructive/10 px-4 py-3">
-                <p className="text-sm text-destructive">{error}</p>
+                <p className="text-sm text-destructive" role="alert">{error}</p>
               </div>
             )}
 
