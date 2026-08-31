@@ -66,3 +66,5 @@ tsconfig.tsbuildinfo
 .pnpm-lock.yaml
 .yarn.lock
 package-lock.json
+# prisma query compiler wasm, copied by packages/db/scripts/patch-wasm-loader.mjs (never commit build artifacts)
+apps/web/public/__wasm/
