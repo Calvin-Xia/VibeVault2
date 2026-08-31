@@ -68,7 +68,9 @@ export async function sendOtp(email: string): Promise<{ success: boolean; error?
   const fromAddress = process.env.EMAIL_FROM || 'onboarding@resend.dev'
 
   try {
-    await getResend().emails.send({
+    // resend SDK v3+ 对 API 拒绝不抛异常，而是返回 { data: null, error }，
+    // 必须检查 error 否则发送失败也会假成功
+    const { data, error } = await getResend().emails.send({
       from: fromAddress,
       to: email,
       subject: 'VibeVault - 验证码',
@@ -83,7 +85,17 @@ export async function sendOtp(email: string): Promise<{ success: boolean; error?
         </div>
       `,
     })
-  } catch {
+
+    if (error) {
+      console.error(
+        `[sendOtp] Resend 拒绝发信: name=${error.name} statusCode=${error.statusCode} message=${error.message} to=${email} from=${fromAddress}`,
+      )
+      return { success: false, error: '邮件发送失败，请稍后重试' }
+    }
+
+    console.log(`[sendOtp] 验证码邮件已提交 Resend: id=${data?.id ?? 'unknown'} to=${email}`)
+  } catch (err) {
+    console.error('[sendOtp] Resend 请求异常:', err)
     return { success: false, error: '邮件发送失败，请稍后重试' }
   }
 

@@ -45,11 +45,13 @@ jobs:
         env:
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          OTP_PEPPER: ${{ secrets.OTP_PEPPER }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           echo "$NEXTAUTH_SECRET" | pnpm exec wrangler secret put NEXTAUTH_SECRET
           echo "$RESEND_API_KEY" | pnpm exec wrangler secret put RESEND_API_KEY
+          echo "$OTP_PEPPER" | pnpm exec wrangler secret put OTP_PEPPER
       - name: Deploy Worker
         working-directory: apps/web
         run: pnpm exec wrangler deploy

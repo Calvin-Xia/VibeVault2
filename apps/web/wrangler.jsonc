@@ -24,7 +24,7 @@
 	// are set via `wrangler secret put` (see .github/workflows/deploy.yml).
 	"vars": {
 		"NEXTAUTH_URL": "https://vibevault.calvin-xia.workers.dev",
-		"EMAIL_FROM": "onboarding@resend.dev",
+		"EMAIL_FROM": "noreply@calvin-xia.cn",
 		"DATABASE_PROVIDER": "d1"
 	}
 }
