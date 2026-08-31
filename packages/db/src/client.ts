@@ -1,7 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-// Workers 上必须用 WASM 查询引擎的客户端变体:默认变体加载 Rust 原生引擎,
-// 在 Workers 触发 "EvalError: Code generation from strings disallowed"。
-import { PrismaClient as PrismaClientWasm } from '@prisma/client/wasm'
+import { PrismaBetterSQLite3 } from '@prisma/adapter-better-sqlite3'
 import { PrismaD1 } from '@prisma/adapter-d1'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 
@@ -11,8 +9,11 @@ const globalForPrisma = globalThis as unknown as {
 
 /**
  * 运行时选择:
- * - Cloudflare Workers (OpenNext):WASM 引擎客户端 + D1 binding (via @prisma/adapter-d1)
- * - 本地开发 / CI (Node):直接使用 PrismaClient (DATABASE_URL, SQLite)
+ * - Cloudflare Workers (OpenNext):D1 binding (via @prisma/adapter-d1)
+ * - 本地开发 / CI (Node):SQLite (via @prisma/adapter-better-sqlite3)
+ *
+ * queryCompiler 预览特性下客户端无内置连接器,两个分支都必须显式接适配器;
+ * 这也是 Workers 上唯一可行路线(Rust 原生引擎与 wasm 引擎变体均不可用)。
  *
  * 惰性初始化:在首次使用时才构建,避免在模块加载期(Worker 冷启动)
  * 调用 getCloudflareContext —— 它只能在请求生命周期内调用。
@@ -27,14 +28,15 @@ function createClient(): PrismaClient {
       const envRecord = env as Record<string, unknown>
       const db = envRecord.DB ?? envRecord.vibevault ?? envRecord.d1
       if (db) {
-        return new PrismaClientWasm({ adapter: new PrismaD1(db as never) }) as unknown as PrismaClient
+        return new PrismaClient({ adapter: new PrismaD1(db as never) })
       }
     } catch (err) {
-      console.error('[db] getCloudflareContext 不可用,回退到本地 PrismaClient:', err)
+      console.error('[db] getCloudflareContext 不可用,回退到本地 SQLite 适配器:', err)
     }
   }
 
   return new PrismaClient({
+    adapter: new PrismaBetterSQLite3({ url: process.env.DATABASE_URL ?? 'file:./dev.db' }),
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   })
 }

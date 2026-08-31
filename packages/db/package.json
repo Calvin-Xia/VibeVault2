@@ -12,12 +12,13 @@
     "studio": "prisma studio"
   },
   "dependencies": {
-    "@prisma/adapter-d1": "^5.22.0",
-    "@prisma/client": "^5.10.0"
+    "@prisma/adapter-better-sqlite3": "^6.19.3",
+    "@prisma/adapter-d1": "^6.19.3",
+    "@prisma/client": "^6.19.3"
   },
   "devDependencies": {
     "@types/node": "^20.19.27",
-    "prisma": "^5.10.0",
+    "prisma": "^6.19.3",
     "typescript": "^5.3.0"
   }
 }
