@@ -6,6 +6,15 @@
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
+	// Prisma 查询编译器 wasm:patch-worker-wasm.mjs 会在 OpenNext 构建后
+	// 把它改为 worker.js 的静态 import,由此以预编译模块上传
+	// (workerd 禁止运行时 WebAssembly 编译)。
+	"rules": [
+		{
+			"type": "CompiledWasm",
+			"globs": ["**/*.wasm"]
+		}
+	],
 	"assets": {
 		"directory": ".open-next/assets",
 		"binding": "ASSETS"

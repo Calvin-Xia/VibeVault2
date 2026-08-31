@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "pnpm -F @vibevault/web exec opennextjs-cloudflare build",
+    "build": "pnpm -F @vibevault/web exec opennextjs-cloudflare build && node packages/db/scripts/patch-worker-wasm.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
