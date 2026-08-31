@@ -7,7 +7,7 @@
     "./client": "./src/client.ts"
   },
   "scripts": {
-    "generate": "prisma generate",
+    "generate": "prisma generate && node scripts/patch-wasm-loader.mjs",
     "push": "prisma db push",
     "studio": "prisma studio"
   },
