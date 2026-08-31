@@ -66,7 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({ statusCounts, onClose }) => {
     pathname === '/app' && searchParams.get('status') === statusId
 
   return (
-    <aside className="w-64 h-full border-r border-border bg-card/60 backdrop-blur-[8px] overflow-y-auto">
+    <aside className="w-64 h-full border-r border-border bg-card/95 overflow-y-auto">
       <div className="p-4">
         {/* Status filters */}
         <div className="mb-6">

@@ -141,6 +141,12 @@
   -webkit-backdrop-filter: blur(10px);
 }
 
+/* 静态表面:无 backdrop-filter(DESIGN.md 红线:blur 仅限顶栏与弹层遮罩) */
+.glass-static {
+  background: hsl(var(--card) / 0.85);
+  border: 1px solid hsl(var(--border));
+}
+
 .gradient-accent {
   background-image: linear-gradient(135deg, hsl(var(--violet)), hsl(var(--cyan)));
 }

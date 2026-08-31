@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useCallback, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import ReactFlow, {
   Background,
   Controls,
@@ -18,7 +17,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css'
 import { listLinks } from '@/actions/linkActions'
 import { toast } from 'sonner'
-import { LayoutGrid, GitBranch } from 'lucide-react'
+import { GitBranch } from 'lucide-react'
 import { Reveal } from '@/components/Reveal'
 
 interface GraphNodeData {
@@ -29,7 +28,6 @@ interface GraphNodeData {
 
 function GraphView() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
-  const router = useRouter()
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -216,28 +214,9 @@ function GraphView() {
   return (
     <div className="p-6">
       <Reveal as="h1" className="text-2xl font-semibold mb-4">知识图谱</Reveal>
-      <div className="glass rounded-2xl p-6">
-        {/* View options tab */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
-            <button
-              className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors text-muted-foreground hover:bg-accent"
-              onClick={() => router.push('/app')}
-              aria-label="切换到瀑布流视图"
-            >
-              <LayoutGrid className="h-4 w-4" aria-hidden="true" />
-              <span className="hidden sm:inline">瀑布流</span>
-            </button>
-            <button
-              className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors bg-card text-foreground shadow-sm"
-              onClick={() => router.push('/app/graph')}
-              aria-current="page"
-              aria-label="知识图谱视图（当前）"
-            >
-              <GitBranch className="h-4 w-4" aria-hidden="true" />
-              <span className="hidden sm:inline">知识图谱</span>
-            </button>
-          </div>
+      <div className="glass-static rounded-2xl p-6">
+        {/* 视图切换由 FilterBar 统一负责(单页 /app?view=graph),此处仅保留刷新按钮 */}
+        <div className="flex items-center justify-end mb-4">
           <button
             className="btn btn-primary"
             onClick={generateGraphData}

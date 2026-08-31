@@ -50,6 +50,8 @@ const FilterBar: React.FC = () => {
     { value: 'graph', label: '知识图谱', icon: GitBranch },
   ]
 
+  const isGraphView = searchParams.get('view') === 'graph'
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     const params = new URLSearchParams(searchParams)
@@ -68,11 +70,14 @@ const FilterBar: React.FC = () => {
   }
 
   const handleViewChange = (view: string) => {
+    // 单页切换视图:保留现有 search/tag/status/sort 参数,仅增删 view
+    const params = new URLSearchParams(searchParams)
     if (view === 'graph') {
-      router.push('/app/graph')
+      params.set('view', 'graph')
     } else {
-      router.push('/app')
+      params.delete('view')
     }
+    router.push(`${pathname}?${params.toString()}`)
   }
 
   const handleAddLink = async (e: React.FormEvent) => {
@@ -113,7 +118,7 @@ const FilterBar: React.FC = () => {
   }
 
   return (
-    <div className="relative border-b border-border bg-card/60 backdrop-blur-md px-6 py-3 flex flex-col gap-4">
+    <div className="relative border-b border-border bg-card/95 px-6 py-3 flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
         {/* Search form */}
         <form onSubmit={handleSearch} className="flex-1 max-w-md">
@@ -156,11 +161,13 @@ const FilterBar: React.FC = () => {
         <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
           {viewOptions.map((option) => {
             const Icon = option.icon
+            const isActive = option.value === 'graph' ? isGraphView : !isGraphView
             return (
               <button
                 key={option.value}
+                aria-pressed={isActive}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  pathname === (option.value === 'graph' ? '/app/graph' : '/app')
+                  isActive
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                 }`}

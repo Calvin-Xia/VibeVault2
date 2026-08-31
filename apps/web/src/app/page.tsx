@@ -129,7 +129,7 @@ export default function SignInPage() {
         initial={{ opacity: 0, y: 24, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-        className="glass card w-full max-w-md rounded-2xl p-8"
+        className="glass-static card w-full max-w-md rounded-2xl p-8"
       >
         <div className="mb-8 text-center">
           <span className="eyebrow in-view mb-4">Personal Link Vault</span>

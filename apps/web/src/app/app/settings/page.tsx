@@ -235,7 +235,7 @@ function Settings() {
       <Reveal as="h1" className="text-2xl font-semibold mb-6 text-foreground">设置</Reveal>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* 导入导出 */}
-        <div className="glass rounded-2xl p-6">
+        <div className="glass-static rounded-2xl p-6">
           <h2 className="text-xl font-medium mb-4 text-foreground">导入导出</h2>
           
           <div className="space-y-4">
@@ -286,7 +286,7 @@ function Settings() {
         </div>
 
         {/* Tag management */}
-        <div className="glass rounded-2xl p-6">
+        <div className="glass-static rounded-2xl p-6">
           <h2 className="text-xl font-medium mb-4 flex items-center gap-2 text-foreground">
             <Tag className="h-5 w-5" />
             标签管理

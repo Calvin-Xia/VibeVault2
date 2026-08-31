@@ -188,7 +188,7 @@ function LinkDetail() {
   if (isLoading) {
     return (
       <div className="p-6">
-        <div className="glass rounded-2xl p-6">
+        <div className="glass-static rounded-2xl p-6">
           <div className="flex items-center gap-2 mb-6">
             <Skeleton className="h-4 w-16" />
           </div>
@@ -226,7 +226,7 @@ function LinkDetail() {
   if (error || !link) {
     return (
       <div className="p-6">
-        <div className="glass rounded-2xl p-6">
+        <div className="glass-static rounded-2xl p-6">
           <div className="text-center py-12">
             <ExternalLink className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
             <h2 className="text-xl font-medium mb-2">链接未找到</h2>
@@ -272,7 +272,7 @@ function LinkDetail() {
         <span>返回列表</span>
       </button>
 
-      <div className="glass rounded-2xl overflow-hidden">
+      <div className="glass-static rounded-2xl overflow-hidden">
         {/* Hero image */}
         {link.ogImage && (
           <div className="relative h-64 bg-muted">

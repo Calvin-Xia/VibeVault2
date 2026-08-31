@@ -1,21 +1,20 @@
-'use client'
+import { redirect } from 'next/navigation'
 
-import dynamic from 'next/dynamic'
-import { Skeleton } from '@/components/ui/Skeleton'
-
-// reactflow 依赖浏览器 API,仅客户端加载,加载期间以 Skeleton 回退
-const GraphCanvas = dynamic(() => import('./GraphCanvas'), {
-  ssr: false,
-  loading: () => (
-    <div className="p-6">
-      <Skeleton className="h-8 w-32 mb-4 rounded-lg" />
-      <div className="glass rounded-2xl p-6">
-        <Skeleton className="h-[min(600px,70dvh)] w-full rounded-xl" />
-      </div>
-    </div>
-  ),
-})
-
-export default function GraphPage() {
-  return <GraphCanvas />
+// 图谱视图已合并进工作台(/app?view=graph);
+// 旧 /app/graph 路由重定向,保留 search/tag/status/sort 过滤参数
+export default async function GraphRedirectPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[]>>
+}) {
+  const params = await searchParams
+  const preserved = new URLSearchParams()
+  for (const key of ['search', 'tag', 'status', 'sort']) {
+    const value = params[key]
+    if (typeof value === 'string' && value) {
+      preserved.set(key, value)
+    }
+  }
+  preserved.set('view', 'graph')
+  redirect(`/app?${preserved.toString()}`)
 }

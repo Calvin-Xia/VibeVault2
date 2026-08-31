@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@vibevault/db'
+import { DEFAULT_TAG_COLOR } from '@/lib/tagColor'
 
 export async function listTags() {
   const session = await getServerSession(authOptions)
@@ -48,7 +49,7 @@ export async function createTag(data: { name: string; color?: string }) {
 
   try {
     const hexColorRegex = /^#[0-9A-Fa-f]{6}$/
-    const safeColor = data.color && hexColorRegex.test(data.color) ? data.color : '#8b5cf6'
+    const safeColor = data.color && hexColorRegex.test(data.color) ? data.color : DEFAULT_TAG_COLOR
     const tag = await prisma.tag.create({
       data: {
         userId: session.user.id,
@@ -112,7 +113,7 @@ export async function updateTag(tagId: string, data: { name: string; color?: str
 
   try {
     const hexColorRegex = /^#[0-9A-Fa-f]{6}$/
-    const safeColor = data.color && hexColorRegex.test(data.color) ? data.color : '#8b5cf6'
+    const safeColor = data.color && hexColorRegex.test(data.color) ? data.color : DEFAULT_TAG_COLOR
     const tag = await prisma.tag.update({
       where: {
         id: tagId,

@@ -1,12 +1,21 @@
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import { getServerSession } from 'next-auth'
 import LinkGridVirtual from '@/components/LinkGridVirtual'
 import FilterBar from '@/components/FilterBar'
+import GraphView from './GraphView'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { listLinks } from '@/actions/linkActions'
 import { authOptions } from '@/lib/auth'
 
-export const metadata = { title: '全部链接' }
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[]>>
+}): Promise<Metadata> {
+  const params = await searchParams
+  return { title: params.view === 'graph' ? '知识图谱' : '全部链接' }
+}
 
 function DashboardGridSkeleton() {
   return (
@@ -47,16 +56,23 @@ async function LinksGrid({ searchParams }: { searchParams: Promise<Record<string
 }
 
 async function Dashboard({ searchParams }: { searchParams: Promise<Record<string, string | string[]>> }) {
+  const params = await searchParams
+  const isGraphView = params.view === 'graph'
   return (
     <div className="flex flex-col h-full">
       <Suspense fallback={<div className="h-16 border-b border-border bg-card/60" />}>
         <FilterBar />
       </Suspense>
-      <div className="flex-1 overflow-y-auto p-6">
-        <Suspense fallback={<DashboardGridSkeleton />}>
-          <LinksGrid searchParams={searchParams} />
-        </Suspense>
-      </div>
+      {isGraphView ? (
+        <GraphView />
+      ) : (
+        /* 页面级滚动根:LinkGridVirtual 通过 data-scroll-root 定位虚拟滚动容器 */
+        <div data-scroll-root="true" className="flex-1 overflow-y-auto p-6">
+          <Suspense fallback={<DashboardGridSkeleton />}>
+            <LinksGrid searchParams={searchParams} />
+          </Suspense>
+        </div>
+      )}
     </div>
   )
 }

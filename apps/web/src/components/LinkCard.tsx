@@ -188,7 +188,7 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span className="font-mono text-xs truncate">{link.domain}</span>
                 <span>•</span>
-                <span className="text-xs">{new Date(link.createdAt).toLocaleDateString()}</span>
+                <span className="text-xs">{new Date(link.createdAt).toLocaleDateString('zh-CN', { dateStyle: 'medium' })}</span>
               </div>
             </div>
             <button
