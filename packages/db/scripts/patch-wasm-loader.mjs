@@ -39,8 +39,11 @@ const assetLoader = `getQueryCompilerWasmModule: async () => {
           }
           const res = await assets.fetch(new Request('https://assets.local/__wasm/query_compiler_bg.wasm'))
           if (!res.ok) throw new Error('ASSETS fetch failed with status ' + res.status)
-          return new WebAssembly.Module(new Uint8Array(await res.arrayBuffer()))
+          const mod = new WebAssembly.Module(new Uint8Array(await res.arrayBuffer()))
+          console.log('[prisma-wasm] query compiler loaded from ASSETS')
+          return mod
         } catch (assetErr) {
+          console.error('[prisma-wasm] ASSETS load failed, falling back to fs:', assetErr && (assetErr.stack || assetErr.message))
           const queryCompilerWasmFilePath = require('path').join(config.dirname, 'query_compiler_bg.wasm')
           const queryCompilerWasmFileBytes = require('fs').readFileSync(queryCompilerWasmFilePath)
           return new WebAssembly.Module(queryCompilerWasmFileBytes)

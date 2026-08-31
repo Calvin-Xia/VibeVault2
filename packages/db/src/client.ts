@@ -27,6 +27,11 @@ function createClient(): PrismaClient {
       // accept DB (wrangler.jsonc) or the database_name fallback.
       const envRecord = env as Record<string, unknown>
       const db = envRecord.DB ?? envRecord.vibevault ?? envRecord.d1
+      // 供 patch-wasm-loader.mjs 改写后的 prisma loader 取查询编译器 wasm
+      // (loader 里再调 getCloudflareContext 不可靠,这里提前挂好已验证的引用)
+      if (envRecord.ASSETS) {
+        ;(globalThis as unknown as Record<string, unknown>).__VIBEVAULT_ASSETS = envRecord.ASSETS
+      }
       if (db) {
         return new PrismaClient({ adapter: new PrismaD1(db as never) })
       }
