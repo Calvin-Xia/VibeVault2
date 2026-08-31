@@ -1,7 +1,9 @@
 generator client {
   provider        = "prisma-client-js"
-  // queryCompiler: 纯 TS 查询编译器,替代 Rust 引擎 —— Workers (OpenNext) 上唯一可行路线,
-  // wasm 引擎变体在 OpenNext 中不被支持(opennextjs#139)。必须搭配驱动适配器使用。
+  // queryCompiler + engineType "client":纯 TS/内联 wasm 查询编译器,替代 Rust 原生引擎
+  // —— Workers (OpenNext) 上唯一可行路线(Rust 引擎与 @prisma/client/wasm 资产均不可用)。
+  // 必须搭配驱动适配器使用。
+  engineType      = "client"
   previewFeatures = ["driverAdapters", "queryCompiler"]
 }
 
