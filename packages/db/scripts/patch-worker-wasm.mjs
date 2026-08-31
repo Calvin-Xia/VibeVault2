@@ -44,7 +44,8 @@ function patchFile(filePath) {
     console.log(`[patch-worker-wasm] ${relative(openNextDir, filePath)} already patched, skipping`)
     return 0
   }
-  if (!source.includes(PROP)) return 0
+  DEF_RE.lastIndex = 0
+  if (!DEF_RE.test(source)) return 0
 
   let patched = 0
   for (;;) {
