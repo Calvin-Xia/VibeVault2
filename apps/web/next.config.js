@@ -5,25 +5,29 @@ const nextConfig = {
   // Monorepo: Next tries to infer the workspace root from lockfiles; the user's
   // home directory may contain an unrelated package-lock.json, so pin it.
   outputFileTracingRoot: path.join(__dirname, '../..'),
-  // better-sqlite3 是原生模块,靠 bindings 在运行时按 module.filename 定位 .node 文件。
-  // 一旦被 webpack 打进 bundle,module.filename 就不存在,bindings 会对 undefined 调用
-  // .indexOf 直接抛错 —— 表现为本地所有 Prisma 查询失败(页面渲染成"暂无链接"、
-  // Server Action 一律 500)。
-  //
-  // 注意:单靠 serverExternalPackages 无效。better-sqlite3 虽在 Next 默认 external 列表中,
-  // 但它是被 @prisma/adapter-better-sqlite3 间接 require 的,而该适配器不在默认列表里,
-  // 于是原生模块仍被打包;适配器本身又是 packages/db 通过路径别名(裸 TS 源码)引入的,
-  // Next 的 external 判定覆盖不到这条链。因此在 webpack 层显式 external 才可靠。
-  //
-  // 这也正是 Workers 构建需要的:生产环境走 D1 适配器,
-  // better-sqlite3 根本不该进入产物。
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
     // Prisma WASM query engine (@prisma/client/wasm, Workers 上必需):
     // wasm-worker-loader.mjs 通过 `import('./query_engine_bg.wasm')` 加载引擎,
     // webpack 必须开启 asyncWebAssembly 才能打包 .wasm 导入。
     config.experiments = { ...config.experiments, asyncWebAssembly: true }
 
-    if (isServer) {
+    // 【仅 dev】把原生模块从 server bundle 中 external 掉。
+    //
+    // 为什么必须是 dev-only:better-sqlite3 靠 bindings 在运行时用 module.filename 定位
+    // .node 文件,被 webpack 打包后 module.filename 为 undefined,bindings 会对它调用
+    // .indexOf 抛错 —— 本地所有 Prisma 查询失败,而 listLinks/getStatusCounts 的 try/catch
+    // 会把它吞成"空数据",界面看着像"暂无链接",Server Action 则一律 500。
+    //
+    // 生产构建绝对不能这么做:external 会在产物里留下裸 require("@prisma/adapter-better-sqlite3"),
+    // 而 OpenNext 用 esbuild 二次打包 server-functions 时无法解析它(CI 实测 6 处
+    // "Could not resolve" 直接构建失败)。生产走 D1 适配器,这一整块本来就是死代码,
+    // 让 esbuild 照常把它打进去即可 —— 原来的构建一直是这么通过的。
+    //
+    // 另注:单靠 serverExternalPackages 修不好 dev。better-sqlite3 虽在 Next 默认 external
+    // 列表里,但它是被 @prisma/adapter-better-sqlite3 间接 require 的,而该适配器不在默认
+    // 列表内,且适配器是 packages/db 通过路径别名(裸 TS 源码)引入的,Next 的 external
+    // 判定覆盖不到这条链,所以只能落到 webpack 层。
+    if (isServer && dev) {
       const nativeModules = ['better-sqlite3', '@prisma/adapter-better-sqlite3', 'bindings']
       config.externals = Array.isArray(config.externals)
         ? [...config.externals, ...nativeModules]
