@@ -173,32 +173,38 @@ export function isBlockedIpv4(value: Ipv4): boolean {
 }
 
 /** 判断 IPv6 各组是否落在内网/保留网段(含 IPv4-mapped / 6to4 / Teredo 内嵌地址) */
+/**
+ * 判断 IPv6 是否落在非全局可达的地址空间。
+ *
+ * 采用**默认拒绝**:先只放行全局单播 2000::/3(RFC 4291),再在其中排除
+ * 少数不可全局路由的特殊用途段。
+ *
+ * 为什么不是"逐个枚举内网段"(本项目此前的做法):IANA 的 IPv6 特殊用途表一直在增长 ——
+ * 3fff::/20 是 2024 年新增、100:0:0:1::/64 是 2025 年新增 —— 默认放行意味着
+ * 每漏掉一段就多一条通往内网的 SSRF 路径。默认拒绝后,新增的特殊用途段自动被挡住。
+ * 两类历史写法都因此被拦住:内网/保留段(fe80::/10、fc00::/7、fec0::/10 站点本地、
+ * 100::/64、64:ff9b:1::/48 本地 NAT64)以及各版本之前的 IPv4 映射形态
+ * (::1、::ffff:127.0.0.1)—— 后者在 2000::/3 之外,一律拒绝,不必再单独判定内嵌 IPv4。
+ */
 export function isBlockedIpv6(groups: Ipv6): boolean {
-  const [g0, g1, g2, g3, g4, g5, g6, g7] = groups
+  const [g0, g1, g2] = groups
 
-  if (groups.every((g) => g === 0)) return true // :: 未指定
-  if ((g0 & 0xffc0) === 0xfe80) return true // fe80::/10 link-local
-  if ((g0 & 0xfe00) === 0xfc00) return true // fc00::/7 ULA
-  if ((g0 & 0xff00) === 0xff00) return true // ff00::/8 multicast
+  // 全局单播 2000::/3 之外一律拒绝:含 ::/::1、::ffff:0:0/96 映射地址、
+  // fe80::/10、fc00::/7、ff00::/8、fec0::/10、100::/64、64:ff9b::/96、5f00::/16 等
+  if ((g0 & 0xe000) !== 0x2000) return true
 
-  // IPv4-mapped (::ffff:a.b.c.d) 与 IPv4-compatible (::a.b.c.d,含 ::1)
-  if (g0 === 0 && g1 === 0 && g2 === 0 && g3 === 0 && g4 === 0 && (g5 === 0xffff || g5 === 0)) {
-    return isBlockedIpv4(((g6 << 16) | g7) >>> 0)
-  }
+  // 2001::/23 IETF Protocol Assignments —— 该段整体标注为 not globally reachable
+  // (含 Teredo 2001::/32、基准测试 2001:2::/48、ORCHID 2001:10::/28 等)
+  if (g0 === 0x2001 && (g1 & 0xfe00) === 0x0000) return true
+  // 2001:db8::/32 文档用 (RFC 3849)
+  if (g0 === 0x2001 && g1 === 0x0db8) return true
+  // 3fff::/20 文档用 (RFC 9637)。注意 /20 跨了 g0 与 g1 的高 4 位,
+  // 不能只掩 g0(那会连 3ff0::/20 一起误伤)
+  if (g0 === 0x3fff && (g1 & 0xf000) === 0x0000) return true
 
-  // NAT64 64:ff9b::/96
-  if (g0 === 0x64 && g1 === 0xff9b && g2 === 0 && g3 === 0 && g4 === 0 && g5 === 0) {
-    return isBlockedIpv4(((g6 << 16) | g7) >>> 0)
-  }
-
-  // 6to4 2002::/16 内嵌 IPv4 位于 g1/g2
+  // 6to4 2002::/16 落在全局单播内,但其内嵌 IPv4 可能指向内网,必须再按 IPv4 规则复查
   if (g0 === 0x2002) {
-    return isBlockedIpv4((((g1 << 16) | g2) >>> 0))
-  }
-
-  // Teredo 2001:0::/32 内嵌 IPv4 为 g6/g7 取反
-  if (g0 === 0x2001 && g1 === 0x0000) {
-    return isBlockedIpv4((((g6 ^ 0xffff) << 16) | (g7 ^ 0xffff)) >>> 0)
+    return isBlockedIpv4(((g1 << 16) | g2) >>> 0)
   }
 
   return false

@@ -118,6 +118,10 @@ function LinkDetail() {
       if (result.success && result.link) {
         setLink(result.link as unknown as Link)
         toast.success(status === 'ARCHIVED' ? '已归档' : '已取消归档')
+        // 侧边栏的"未处理/正在处理/已完成"计数来自 app/app/layout.tsx 的
+        // getStatusCounts(server),setLink 只更新本页局部状态,不刷新布局的话
+        // 归档后侧边栏会一直显示旧数字,直到下一次整页刷新。
+        router.refresh()
       } else {
         toast.error('操作失败')
       }
@@ -171,6 +175,9 @@ function LinkDetail() {
       if (result.success && result.link) {
         setLink(result.link as unknown as Link)
         toast.success(isTagAssigned ? '已移除标签' : '已添加标签')
+        // 同上:侧边栏标签后括号里的数量来自 listTags 的 _count.linkTags,
+        // 也渲染在 server 布局里,不 refresh 就会滞后。
+        router.refresh()
       } else {
         toast.error('标签操作失败')
       }
