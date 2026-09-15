@@ -26,10 +26,10 @@ interface GraphNodeData {
   style?: React.CSSProperties
 }
 
-// ReactFlow 按引用比较 nodeTypes(以及 onInit 之类的回调),写成内联字面量会每次渲染
-// 都产生新对象,导致内部反复重新注册节点类型。提到模块级保持引用稳定。
-const NODE_TYPES = {}
-const handleInit = () => {}
+// 图谱只用内置的 default 节点/边类型,所以不传 nodeTypes/edgeTypes —— 传空对象没有语义。
+// 注意:即使完全不传,ReactFlow v11 内部仍会打两条 "new nodeTypes or edgeTypes object"
+// 警告(其默认参数每次渲染都新建对象),这是库自身的开发期噪音,应用侧无法消除。
+// 同时也不再传那个什么都不做的 onInit 空函数。
 
 function GraphView() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
@@ -187,12 +187,14 @@ function GraphView() {
             })
           }
 
-          // Add edges between link and its tag with natural curve
+          // Add edges between link and its tag with natural curve.
+          // 不指定 type:ReactFlow v11 没有名为 'bezier' 的内置边类型,
+          // 写 'bezier' 会退化为 default 并对每条边打一条 warning(实测每条边一条)。
+          // default 本身渲染的就是贝塞尔曲线,正是这里想要的效果。
           newEdges.push({
             id: `edge-${idCounter++}`,
             source: tagNodeId,
             target: nodeId,
-            type: 'bezier',
             style: {
               stroke: 'hsl(var(--border-hover))',
               strokeWidth: 1.5,
@@ -251,8 +253,6 @@ function GraphView() {
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
-            onInit={handleInit}
-            nodeTypes={NODE_TYPES}
             fitView
             minZoom={0.1}
             maxZoom={3}

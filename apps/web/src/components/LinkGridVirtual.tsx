@@ -72,10 +72,15 @@ function VirtualColumn({ items, scrollElement, scrollMargin, animateCount }: Vir
         const link = items[virtualRow.index]
         // 仅各列首批卡片做 stagger 入场,其余滚动入场即时(见 DESIGN.md 性能红线)
         const animate = virtualRow.index < animateCount
-        // virtualizer 的 start 含 scrollMargin(页面内容偏移),渲染时换算回列内坐标
+        // virtualizer 的 start 含 scrollMargin(页面内容偏移),渲染时换算回列内坐标。
+        //
+        // 这里刻意不设 height:行高必须由内容自然撑开,measureElement 才能把真实高度
+        // 回报给 virtualizer。一旦写死 height: virtualRow.size,getBoundingClientRect
+        // 量到的永远是这个写死值,ResizeObserver 形成自证循环,估算误差永远无法修正 ——
+        // 实测 30 行里 27 行内容溢出(最多 51px),溢出的卡片会盖住下一行的操作按钮,
+        // 导致部分"编辑/删除"按钮点不动(pointer 事件被上一行截获)。
         const rowStyle = {
           top: `${virtualRow.start - scrollMargin}px`,
-          height: `${virtualRow.size}px`,
         }
         const rowContent = (
           <div className="pb-4">
