@@ -1,7 +1,22 @@
-import { describe, it, expect } from 'vitest'
-import { validateFetchTarget, parseMetadataHtml } from '@/lib/metadata'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { validateFetchTarget, parseMetadataHtml, fetchMetadata } from '@/lib/metadata'
 
 const METADATA_MODULE = '@/lib/metadata'
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+/** 构造带流式响应体的 Response,用于验证大小上限在读取过程中生效 */
+function streamedResponse(chunks: Uint8Array[], headers: Record<string, string> = {}): Response {
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const chunk of chunks) controller.enqueue(chunk)
+      controller.close()
+    },
+  })
+  return new Response(stream, { headers: { 'content-type': 'text/html', ...headers } })
+}
 
 describe('validateFetchTarget (SSRF 防护)', () => {
   it('允许公网 http/https 链接', () => {
@@ -45,6 +60,113 @@ describe('validateFetchTarget (SSRF 防护)', () => {
 
   it('空白输入不被误判为合法', () => {
     expect(validateFetchTarget(' ').ok).toBe(false)
+  })
+
+  it('拒绝 IPv4 等价写法绕过(十进制/十六进制/八进制/缩写点分)', () => {
+    const bypasses = [
+      'http://2130706433/', // 十进制 127.0.0.1
+      'http://0x7f000001/', // 十六进制
+      'http://0x7f.0.0.1/', // 混合进制
+      'http://0177.0.0.1/', // 八进制
+      'http://127.1/', // 缩写点分
+      'http://2852039166/', // 十进制 169.254.169.254(云元数据)
+    ]
+    for (const url of bypasses) {
+      const r = validateFetchTarget(url)
+      expect(r.ok, `应拒绝 ${url}`).toBe(false)
+    }
+  })
+
+  it('拒绝 IPv4-mapped IPv6 绕过', () => {
+    for (const url of ['http://[::ffff:127.0.0.1]/', 'http://[::127.0.0.1]/', 'http://[0:0:0:0:0:ffff:169.254.169.254]/']) {
+      expect(validateFetchTarget(url).ok, `应拒绝 ${url}`).toBe(false)
+    }
+  })
+
+  it('拒绝末尾带点的 localhost 与保留后缀', () => {
+    for (const url of ['http://localhost./', 'http://foo.internal/', 'http://x.home.arpa/']) {
+      expect(validateFetchTarget(url).ok, `应拒绝 ${url}`).toBe(false)
+    }
+  })
+
+  it('拒绝带内嵌凭据的 URL', () => {
+    const r = validateFetchTarget('http://user:pass@example.com/')
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.error).toContain('credentials')
+  })
+
+  it('放行公网 IP 字面量', () => {
+    for (const url of ['https://1.1.1.1/', 'https://8.8.8.8/x', 'https://[2606:4700::1111]/']) {
+      expect(validateFetchTarget(url).ok, `应放行 ${url}`).toBe(true)
+    }
+  })
+})
+
+describe('fetchMetadata 响应体大小上限', () => {
+  it('Content-Length 超限时直接拒绝,不读取响应体', async () => {
+    const text = vi.fn(async () => '<html></html>')
+    const response = {
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'content-type': 'text/html', 'content-length': String(8 * 1024 * 1024) }),
+      body: null,
+      text,
+    } as unknown as Response
+    vi.stubGlobal('fetch', vi.fn(async () => response))
+
+    const result = await fetchMetadata('https://example.com/')
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('Response too large')
+    expect(text).not.toHaveBeenCalled()
+  })
+
+  it('流式响应体超过上限时中断读取并拒绝', async () => {
+    // 33 × 64KB ≈ 2.06MB,略高于 2MB 上限
+    const chunk = new Uint8Array(64 * 1024)
+    const chunks = Array.from({ length: 33 }, () => chunk)
+    vi.stubGlobal('fetch', vi.fn(async () => streamedResponse(chunks)))
+
+    const result = await fetchMetadata('https://example.com/')
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('Response too large')
+  })
+
+  it('正常大小的 HTML 照常解析', async () => {
+    const html = '<html><head><title>Hello</title><meta property="og:description" content="Desc"></head></html>'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8' } })),
+    )
+
+    const result = await fetchMetadata('https://example.com/')
+    expect(result.success).toBe(true)
+    expect(result.metadata?.title).toBe('Hello')
+    expect(result.metadata?.description).toBe('Desc')
+  })
+
+  it('非 HTML 响应被拒绝', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('%PDF-1.4', { headers: { 'content-type': 'application/pdf' } })),
+    )
+    const result = await fetchMetadata('https://example.com/file.pdf')
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('Not an HTML page')
+  })
+
+  it('非 2xx 响应被拒绝', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('nope', { status: 503 })))
+    const result = await fetchMetadata('https://example.com/')
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('HTTP 503')
+  })
+
+  it('SSRF 目标在发起请求前就被拒绝', async () => {
+    const spy = vi.fn()
+    vi.stubGlobal('fetch', spy)
+    const result = await fetchMetadata('http://169.254.169.254/latest/meta-data/')
+    expect(result.success).toBe(false)
+    expect(spy).not.toHaveBeenCalled()
   })
 })
 

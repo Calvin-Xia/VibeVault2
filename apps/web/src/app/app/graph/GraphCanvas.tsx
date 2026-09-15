@@ -26,6 +26,11 @@ interface GraphNodeData {
   style?: React.CSSProperties
 }
 
+// ReactFlow 按引用比较 nodeTypes(以及 onInit 之类的回调),写成内联字面量会每次渲染
+// 都产生新对象,导致内部反复重新注册节点类型。提到模块级保持引用稳定。
+const NODE_TYPES = {}
+const handleInit = () => {}
+
 function GraphView() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const [nodes, setNodes, onNodesChange] = useNodesState([])
@@ -133,6 +138,12 @@ function GraphView() {
       const linkSpacingY = 80 // Vertical spacing between link rows
       const linkStartX = 350 // Start X position for links (moved further right for better curves)
 
+      // 一个链接可能属于多个标签,会出现在多个分组里。
+      // 节点按分组各自 push 会产生重复 id 的节点(ReactFlow 要求 id 唯一),
+      // 因此每个链接只建一次节点(位置跟随它遇到的第一个标签),
+      // 额外的标签归属只增加一条边。
+      const placedLinkIds = new Set<string>()
+
       // Process each tag and its links
       tagsArray.forEach((tag, tagIndex) => {
         const tagLinks = tagToLinksMap.get(tag.id) || []
@@ -144,33 +155,37 @@ function GraphView() {
         // Arrange links in a column to the right of their tag
         tagLinks.forEach((link, linkIndex) => {
           const nodeId = `link-${link.id}`
-          nodeIdMap.set(link.id, nodeId)
 
-          // Position links in a column to the right of their tag
-          const linkX = linkStartX
-          const linkY = tagLinksStartY + linkIndex * linkSpacingY
+          if (!placedLinkIds.has(link.id)) {
+            placedLinkIds.add(link.id)
+            nodeIdMap.set(link.id, nodeId)
 
-          newNodes.push({
-            id: nodeId,
-            type: 'default',
-            position: {
-              x: linkX,
-              y: linkY,
-            },
-            targetPosition: Position.Left, // Edge enters from left side of link
-            className: 'node-link',
-            data: {
-              label: link.title || link.domain || '未命名链接',
-              url: link.url,
-            },
-            style: {
-              width: '200px',
-              height: 'auto',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: '500',
-            },
-          })
+            // Position links in a column to the right of their tag
+            const linkX = linkStartX
+            const linkY = tagLinksStartY + linkIndex * linkSpacingY
+
+            newNodes.push({
+              id: nodeId,
+              type: 'default',
+              position: {
+                x: linkX,
+                y: linkY,
+              },
+              targetPosition: Position.Left, // Edge enters from left side of link
+              className: 'node-link',
+              data: {
+                label: link.title || link.domain || '未命名链接',
+                url: link.url,
+              },
+              style: {
+                width: '200px',
+                height: 'auto',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: '500',
+              },
+            })
+          }
 
           // Add edges between link and its tag with natural curve
           newEdges.push({
@@ -214,7 +229,8 @@ function GraphView() {
   return (
     <div className="p-6">
       <Reveal as="h1" className="text-2xl font-semibold mb-4">知识图谱</Reveal>
-      <div className="glass-static rounded-2xl p-6">
+      {/* relative:下方空状态用 absolute 居中,需要这里作为定位祖先 */}
+      <div className="glass-static rounded-2xl p-6 relative">
         {/* 视图切换由 FilterBar 统一负责(单页 /app?view=graph),此处仅保留刷新按钮 */}
         <div className="flex items-center justify-end mb-4">
           <button
@@ -235,8 +251,8 @@ function GraphView() {
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
-            onInit={() => {}}
-            nodeTypes={{}}
+            onInit={handleInit}
+            nodeTypes={NODE_TYPES}
             fitView
             minZoom={0.1}
             maxZoom={3}

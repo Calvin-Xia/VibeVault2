@@ -12,6 +12,12 @@ import { Link, Tag } from '@/types/link'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import TagManager from '@/components/ui/TagManager'
 import { DEFAULT_TAG_COLOR, tagTextColor } from '@/lib/tagColor'
+import { formatDisplayDate } from '@/lib/date'
+
+/** Server Action 的失败结果是返回值而不是异常,必须显式判断 */
+function actionError(result: { success: boolean; error?: string }): string | null {
+  return result.success ? null : result.error || '操作失败'
+}
 
 interface LinkCardProps {
   link: Link
@@ -43,6 +49,8 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
       raf = requestAnimationFrame(() => {
         raf = 0
         const r = el.getBoundingClientRect()
+        // 尚未布局(或已隐藏)时尺寸为 0,相除会得到 NaN% 写进自定义属性
+        if (!r.width || !r.height) return
         el.style.setProperty('--mx', ((e.clientX - r.left) / r.width) * 100 + '%')
         el.style.setProperty('--my', ((e.clientY - r.top) / r.height) * 100 + '%')
       })
@@ -58,7 +66,11 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
     if (isFavoritePending) return
     try {
       setIsFavoritePending(true)
-      await updateLink(link.id, { favorite: !link.favorite })
+      const failure = actionError(await updateLink(link.id, { favorite: !link.favorite }))
+      if (failure) {
+        toast.error(failure)
+        return
+      }
       toast.success(link.favorite ? '已取消收藏' : '已收藏')
       router.refresh()
     } catch {
@@ -72,7 +84,11 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
     if (isArchivePending) return
     try {
       setIsArchivePending(true)
-      await updateLink(link.id, { status: 'ARCHIVED' })
+      const failure = actionError(await updateLink(link.id, { status: 'ARCHIVED' }))
+      if (failure) {
+        toast.error(failure)
+        return
+      }
       toast.success('已归档')
       router.refresh()
     } catch {
@@ -85,9 +101,15 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
   const handleSave = async () => {
     setIsSubmitting(true)
     try {
-      await updateLink(link.id, { title, description, note })
+      const failure = actionError(await updateLink(link.id, { title, description, note }))
+      if (failure) {
+        toast.error(failure)
+        return
+      }
       setIsEditing(false)
       toast.success('已保存')
+      // 卡片正文读的是 link prop(服务端数据),不刷新的话会立刻回退成旧文本
+      router.refresh()
     } catch {
       toast.error('操作失败')
     } finally {
@@ -110,8 +132,14 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
   const handleTagToggle = async (tagId: string) => {
     try {
       const isAssigned = link.linkTags.some(({ tag }) => tag.id === tagId)
-      if (isAssigned) await removeTagFromLink(link.id, tagId)
-      else await addTagToLink(link.id, tagId)
+      const result = isAssigned
+        ? await removeTagFromLink(link.id, tagId)
+        : await addTagToLink(link.id, tagId)
+      const failure = actionError(result)
+      if (failure) {
+        toast.error(failure)
+        return
+      }
       toast.success('标签已更新')
       router.refresh()
     } catch {
@@ -122,13 +150,20 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
   const handleDeleteLink = async () => {
     setIsDeleting(true)
     try {
-      const result = await deleteLink(link.id)
-      if (result.success) toast.success('已删除')
+      const failure = actionError(await deleteLink(link.id))
+      if (failure) {
+        // 删除失败时保留对话框,让用户可以直接重试
+        toast.error(failure)
+        return
+      }
+      toast.success('已删除')
+      setShowDeleteConfirm(false)
+      // deleteLink 只做了服务端 revalidate,已挂载的列表不会自己重渲染
+      router.refresh()
     } catch {
       toast.error('操作失败')
     } finally {
       setIsDeleting(false)
-      setShowDeleteConfirm(false)
     }
   }
 
@@ -188,7 +223,7 @@ const LinkCard: React.FC<LinkCardProps> = ({ link }) => {
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span className="font-mono text-xs truncate">{link.domain}</span>
                 <span>•</span>
-                <span className="text-xs">{new Date(link.createdAt).toLocaleDateString('zh-CN', { dateStyle: 'medium' })}</span>
+                <span className="text-xs">{formatDisplayDate(link.createdAt)}</span>
               </div>
             </div>
             <button

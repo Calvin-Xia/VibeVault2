@@ -19,7 +19,7 @@ VibeVault2/
 │   ├── src/actions/       # Server Actions (4 files — ALL data mutations here)
 │   ├── src/app/           # App Router pages + API route
 │   ├── src/components/    # Client Components (12 files, incl. ui/ subdir)
-│   ├── src/lib/           # auth.ts + resend.ts + metadata.ts + url.ts + otp.ts (+ *.test.ts)
+│   ├── src/lib/           # auth.ts + resend.ts + metadata.ts + ipGuard.ts + url.ts + date.ts + otp.ts (+ *.test.ts)
 │   ├── src/middleware.ts  # withAuth — protects /app/:path*
 │   └── src/types/         # link.ts + next-auth.d.ts augmentation
 └── packages/db/           # Prisma package (@vibevault/db)
@@ -55,7 +55,8 @@ VibeVault2/
 - **No Prettier** — not installed; lint is ESLint only
 - **No git hooks** — no husky, no lint-staged, no commitlint
 - **Do NOT edit** `next-env.d.ts`
-- **Tests are allowed**:Vitest 单测已建立(纯函数层 — `src/lib/*.test.ts`、`src/actions/otp.test.ts`;共 25 tests)
+- **Tests are allowed**:Vitest 单测已建立(纯函数层 — `src/lib/*.test.ts`、`src/actions/otp.test.ts`;共 58 tests)
+- **Server Action 入参一律视为不可信**:入参来自网络而非编译器,类型标注不会做运行时校验。写入前必须显式挑字段(勿把对象直接透传给 Prisma)、并把外键 ID 按 `userId` 过滤(参见 `linkActions.resolveOwnedTagIds` / `updateLink` 的白名单)
 
 ## KNOWN ISSUES
 
@@ -93,6 +94,10 @@ cd apps/web && pnpm lint
 - All UI components and the sign-in page are Client Components; only Dashboard (`/app/page.tsx`) and root `layout.tsx` are Server Components
 - `Link.status` uses string values (INBOX, READING, ARCHIVED) via `types/link.ts` `LinkStatus`; `metadataStatus` uses PENDING/READY/FAILED via `MetadataStatus` — not Prisma enums
 - Auth: email OTP via Resend (no password, no GitHub OAuth), JWT sessions, `middleware.ts` guards `/app/:path*`; users auto-created on first successful OTP
-- 元数据抓取已实现(`src/lib/metadata.ts`):创建链接后立即懒抓取 og:title/og:description/og:image/favicon/siteName/publishedTime,`metadataStatus` PENDING→READY/FAILED,详情页支持手动重试;SSRF 防护(拒绝内网/保留 IP、非 http(s)、超时与大小限制)
+- 元数据抓取已实现(`src/lib/metadata.ts`):创建链接后立即懒抓取 og:title/og:description/og:image/favicon/siteName/publishedTime,`metadataStatus` PENDING→READY/FAILED,详情页支持手动重试;SSRF 防护(拒绝非 http(s) 与带凭据 URL、内网/保留地址、超时与响应体大小上限)
+- SSRF 判定集中在 `src/lib/ipGuard.ts`:先用 WHATWG 算法把主机名归一化为 32 位整数(IPv4)或 8×16 位(IPv6),再判定保留网段。**不可退回字符串前缀匹配** —— `2130706433`、`0x7f000001`、`0177.0.0.1`、`127.1` 与 `[::ffff:127.0.0.1]` 都是 `127.0.0.1` 的等价写法。已知限制:不做 DNS 解析后的复查(Workers 无 dns 模块),DNS rebinding 不在拦截范围
+- 日期展示统一走 `src/lib/date.ts` 的 `formatDisplayDate`(固定 `Asia/Shanghai`)。卡片是 SSR 的,用运行环境默认时区会让服务端与浏览器在跨零点的时间戳上格式化出不同日期,触发 hydration 文本不一致
+- 弹层(`ConfirmDialog` / `MobileSheet`)必须 `createPortal` 到 `document.body`:瀑布流列容器带 `contain: layout`、卡片带 transform,二者都会成为 `position: fixed` 的包含块,留在原地会让遮罩相对整列而非视口定位
+- Server Action 的失败是**返回值**而非异常(`{ success: false, error }`)。客户端 `await` 后必须显式判断,否则失败会被当成成功弹 toast
 - Knowledge graph is inline in `graph/page.tsx` (`GraphView` is not a separate component file); masonry grid uses `LinkGridVirtual` (@tanstack/react-virtual) + Fuse.js search
 - 视觉设计规范见根目录 `DESIGN.md`(暗夜宝库 Dark Vault):暗色为默认(`<html class="dark">`),亮色为白昼变体;新 UI 必须遵守其 Color Palette(仅 CSS 变量)、Typography(Noto Sans SC + Space Grotesk + JetBrains Mono,via next/font)、组件类(`.btn*/.card/.chip/.badge/.input/.nav-item` 等)与性能红线(零 `filter: blur()` 于移动元素、聚光灯 rAF 节流、`prefers-reduced-motion` 降级);`tailwind.config.js` 颜色已升级为 `<alpha-value>` 模式(`bg-card/80` 等透明度修饰符有效)

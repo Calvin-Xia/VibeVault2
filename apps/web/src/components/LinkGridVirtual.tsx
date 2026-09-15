@@ -256,8 +256,11 @@ const LinkGridVirtual: React.FC<LinkGridVirtualProps> = ({ links }) => {
       style={{ contain: 'layout' }}
     >
       {columns.map((columnItems, columnIndex) => (
+        // key 里带上 columnCount:列数变化时每一列装的内容完全不同,
+        // 仅用 columnIndex 作 key 会让 React 复用同一个 useVirtualizer 实例,
+        // 留下属于旧数据集的测量缓存。带上列数即可在断点切换时强制重建。
         <VirtualColumn
-          key={columnIndex}
+          key={`${columnCount}-${columnIndex}`}
           items={columnItems}
           scrollElement={scrollElement}
           scrollMargin={scrollMargin}

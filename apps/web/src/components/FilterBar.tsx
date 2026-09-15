@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { createLink } from '@/actions/linkActions'
 import { listTags } from '@/actions/tagActions'
@@ -12,7 +12,8 @@ const FilterBar: React.FC = () => {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const router = useRouter()
-  const [search, setSearch] = useState(searchParams.get('search') || '')
+  const urlSearch = searchParams.get('search') || ''
+  const [search, setSearch] = useState(urlSearch)
   const [showAddForm, setShowAddForm] = useState(false)
   const [url, setUrl] = useState('')
   const [title, setTitle] = useState('')
@@ -21,6 +22,17 @@ const FilterBar: React.FC = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoadingTags, setIsLoadingTags] = useState(false)
+
+  // 输入框状态要与 URL 保持同步:否则通过侧边栏跳转、浏览器前进/后退之后,
+  // 输入框仍显示上一次的关键词,而列表已经是新条件的结果。
+  // 只在 URL 里的 search 真正变化时才同步,这样切换视图等无关导航不会
+  // 把用户已经输入但还没提交的文本冲掉。
+  const lastSyncedSearchRef = useRef(urlSearch)
+  useEffect(() => {
+    if (lastSyncedSearchRef.current === urlSearch) return
+    lastSyncedSearchRef.current = urlSearch
+    setSearch(urlSearch)
+  }, [urlSearch])
 
   // Fetch tags for selection
   useEffect(() => {
@@ -106,6 +118,8 @@ const FilterBar: React.FC = () => {
         setSelectedTags([])
         setShowAddForm(false)
         toast.success('链接已添加')
+        // createLink 只 revalidate 了服务端缓存,已挂载的列表需要 refresh 才会带上新卡片
+        router.refresh()
       } else {
         toast.error(result.error || '添加失败')
       }

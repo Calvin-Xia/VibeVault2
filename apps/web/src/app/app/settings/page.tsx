@@ -11,6 +11,9 @@ import { listTags, deleteTag, updateTag, createTag } from '@/actions/tagActions'
 import { Reveal } from '@/components/Reveal'
 import { DEFAULT_TAG_COLOR } from '@/lib/tagColor'
 
+/** 导入文件大小上限(字节) */
+const MAX_IMPORT_BYTES = 10 * 1024 * 1024
+
 function Settings() {
   const [isExporting, setIsExporting] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
@@ -79,18 +82,20 @@ function Settings() {
     fetchTags()
   }, [])
 
-  const handleDeleteTag = async (tagId: string) => {
+  const handleDeleteTag = async (tagId: string): Promise<boolean> => {
     try {
       const result = await deleteTag(tagId)
       if (result.success) {
         setTags(prev => prev.filter(tag => tag.id !== tagId))
         toast.success('标签已删除')
-      } else {
-        toast.error(result.error || '标签删除失败')
+        return true
       }
+      toast.error(result.error || '标签删除失败')
+      return false
     } catch (error) {
       console.error('Error deleting tag:', error)
       toast.error('标签删除失败')
+      return false
     }
   }
 
@@ -98,10 +103,11 @@ function Settings() {
     if (!deletingTag) return
     try {
       setIsDeletingTag(true)
-      await handleDeleteTag(deletingTag.id)
+      const succeeded = await handleDeleteTag(deletingTag.id)
+      // 失败时保留对话框,避免"看着像关掉了、标签其实还在"
+      if (succeeded) setDeletingTag(null)
     } finally {
       setIsDeletingTag(false)
-      setDeletingTag(null)
     }
   }
 
@@ -174,17 +180,15 @@ function Settings() {
 
     try {
       setIsImporting(true)
-      
-      // Read file content
-      const fileContent = await importFile.text()
-      
-      // Check file size before parsing (10MB limit)
-      if (fileContent.length > 10 * 1024 * 1024) {
+
+      // 先用 File.size(字节)拦截:等 text() 读完之后再判断长度,
+      // 文件早已整个进入内存,限制就失去了意义;而且 string.length 是 UTF-16 码元数,不等于字节数。
+      if (importFile.size > MAX_IMPORT_BYTES) {
         toast.error('文件过大，请确保文件小于10MB')
-        setIsImporting(false)
         return
       }
-      
+
+      const fileContent = await importFile.text()
       const importDataJson = JSON.parse(fileContent)
       
       // Import data

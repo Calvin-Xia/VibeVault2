@@ -31,27 +31,45 @@ function DashboardGridSkeleton() {
   )
 }
 
+/**
+ * 一次拉取的上限。搜索是客户端用 Fuse.js 在已加载数据上做的,
+ * 所以这个值同时决定了"能被搜到多少条"—— 之前用默认的 20,
+ * 导致收藏超过 20 条后旧链接既不显示也搜不到。
+ */
+const DASHBOARD_LIMIT = 500
+
 async function LinksGrid({ searchParams }: { searchParams: Promise<Record<string, string | string[]>> }) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.email) return null
 
   const params = await searchParams
-  const { links } = await listLinks({
+  const { links, total } = await listLinks({
     status: typeof params.status === 'string' ? params.status : undefined,
     tag: typeof params.tag === 'string' ? params.tag : undefined,
     search: typeof params.search === 'string' ? params.search : undefined,
-    sortBy: typeof params.sort === 'string' ? params.sort : undefined
+    sortBy: typeof params.sort === 'string' ? params.sort : undefined,
+    limit: DASHBOARD_LIMIT,
+    page: 1,
   })
 
+  const truncated = total > links.length
+
   return (
-    <LinkGridVirtual links={links.map(link => ({
-      ...link,
-      title: link.title || '',
-      description: link.description || '',
-      note: link.note || '',
-      status: (link.status as 'INBOX' | 'READING' | 'ARCHIVED') || 'INBOX',
-      metadataStatus: (link.metadataStatus as 'PENDING' | 'READY' | 'FAILED') || 'PENDING'
-    }))} />
+    <>
+      {truncated && (
+        <p className="mb-4 text-sm text-muted-foreground" role="status">
+          共 {total} 条,当前显示最新 {links.length} 条。可用搜索框缩小范围。
+        </p>
+      )}
+      <LinkGridVirtual links={links.map(link => ({
+        ...link,
+        title: link.title || '',
+        description: link.description || '',
+        note: link.note || '',
+        status: (link.status as 'INBOX' | 'READING' | 'ARCHIVED') || 'INBOX',
+        metadataStatus: (link.metadataStatus as 'PENDING' | 'READY' | 'FAILED') || 'PENDING'
+      }))} />
+    </>
   )
 }
 
