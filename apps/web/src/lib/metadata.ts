@@ -2,10 +2,16 @@
  * 轻量元数据抓取器(零依赖,Workers 兼容)。
  *
  * 安全红线:
- * - SSRF 防护:拒绝非 http(s)、拒绝内网/保留 IP 字面量、localhost 与裸 IPv6
+ * - SSRF 防护:拒绝非 http(s)、拒绝带凭据的 URL、拒绝内网/保留 IP 字面量
+ *   (含十进制/十六进制/八进制/缩写点分等 IPv4 变体,以及 IPv4-mapped IPv6)
  * - 超时与响应大小限制,避免滥用
  * - 解析失败时返回 { error },由调用方置 metadataStatus = 'FAILED'
+ *
+ * 已知限制:不做 DNS 解析后的复查(Workers 运行时无 dns 模块),
+ * 因此"域名解析到内网"的 DNS rebinding 不在拦截范围内。
  */
+
+import { isBlockedLiteralHost, stripHostBrackets } from '@/lib/ipGuard'
 
 export interface FetchedMetadata {
   title: string | null
@@ -25,12 +31,19 @@ export interface MetadataResult {
 const FETCH_TIMEOUT_MS = 5000
 const MAX_BODY_BYTES = 2 * 1024 * 1024 // 2 MB
 
-/** 内网/保留 IP 字面量(IPv4)与 localhost 白名单拦截 */
-const PRIVATE_IPV4 = /^(?:10\.|127\.|169\.254\.|172\.(?:1[6-9]|2\d|3[01])\.|192\.168\.|0\.|100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.|224\.|240\.|255\.)/i
-const LOCAL_HOSTNAMES = /^(?:localhost|local|localhost\.localdomain|[^.]*\.local(?:\.localdomain)?)$/i
-const RAW_IPV6 = /^[0-9a-f:*]+$/i
+/** 明确禁止的主机名 */
+const BLOCKED_HOSTNAMES = new Set([
+  'localhost',
+  'local',
+  'localhost.localdomain',
+  'ip6-localhost',
+  'ip6-loopback',
+])
 
-/** 校验目标 URL 是否允许被抓取(SSRF 防护)。返回 null 表示安全,否则返回拒绝原因。 */
+/** 保留的域名后缀(RFC 6761 / RFC 8375) */
+const BLOCKED_HOSTNAME_SUFFIXES = ['.localhost', '.local', '.localdomain', '.internal', '.home.arpa']
+
+/** 校验目标 URL 是否允许被抓取(SSRF 防护)。返回 ok:false 表示拒绝。 */
 export function validateFetchTarget(rawUrl: string): { ok: true; url: URL } | { ok: false; error: string } {
   let url: URL
   try {
@@ -43,26 +56,43 @@ export function validateFetchTarget(rawUrl: string): { ok: true; url: URL } | { 
     return { ok: false, error: 'Only HTTP/HTTPS URLs are allowed' }
   }
 
-  const host = url.hostname.toLowerCase()
-  const bareHost = host.startsWith('[') && host.endsWith(']') ? host.slice(1, -1) : host
-
-  // 拒绝裸 IPv6
-  if (RAW_IPV6.test(bareHost) && bareHost.includes(':')) {
-    return { ok: false, error: 'IPv6 literal hosts are not allowed' }
+  // 带凭据的 URL 会被原样转发到目标站,拒绝
+  if (url.username !== '' || url.password !== '') {
+    return { ok: false, error: 'URLs with embedded credentials are not allowed' }
   }
 
-  // 拒绝 IPv6 内网段 (::1, fc00::/7, fe80::/10)
-  if (bareHost.includes(':')) {
-    if (/^(?:fc|fd|fe8|fe9|fea|feb|::1)/i.test(bareHost)) {
-      return { ok: false, error: 'Private network hosts are not allowed' }
-    }
+  // 去掉括号与末尾的点(localhost. 与 localhost 等价)后判定
+  const host = stripHostBrackets(url.hostname.toLowerCase()).replace(/\.+$/, '')
+
+  if (host === '') {
+    return { ok: false, error: 'Invalid URL' }
   }
 
-  if (PRIVATE_IPV4.test(bareHost) || LOCAL_HOSTNAMES.test(bareHost)) {
+  // 先按字面量判定内网/保留 IP(覆盖 IPv4 各种变体与 IPv6)
+  if (isBlockedLiteralHost(host)) {
+    return { ok: false, error: 'Private network hosts are not allowed' }
+  }
+
+  if (BLOCKED_HOSTNAMES.has(host) || BLOCKED_HOSTNAME_SUFFIXES.some((suffix) => host.endsWith(suffix))) {
     return { ok: false, error: 'Private network hosts are not allowed' }
   }
 
   return { ok: true, url }
+}
+
+/**
+ * 码点转字符。页面可以写任意数字实体(如 &#999999999;),
+ * String.fromCodePoint 对超出 Unicode 范围或落在代理区的码点会抛 RangeError,
+ * 而这段逻辑在解析远端 HTML 时执行 —— 必须兜住,否则一个畸形页面就能让整次抓取失败。
+ */
+function codePointToString(codePoint: number): string {
+  if (!Number.isInteger(codePoint) || codePoint < 0 || codePoint > 0x10ffff) return '\uFFFD'
+  if (codePoint >= 0xd800 && codePoint <= 0xdfff) return '\uFFFD'
+  try {
+    return String.fromCodePoint(codePoint)
+  } catch {
+    return '\uFFFD'
+  }
 }
 
 function decodeEntities(input: string): string {
@@ -73,8 +103,8 @@ function decodeEntities(input: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&nbsp;/g, ' ')
-    .replace(/&#(\d+);/g, (_, dec: string) => String.fromCodePoint(Number(dec)))
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex: string) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec: string) => codePointToString(Number(dec)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex: string) => codePointToString(parseInt(hex, 16)))
 }
 
 /** 从 HTML 字符串中提取第一个匹配的 meta/链接标签内容。 */
@@ -143,6 +173,51 @@ export function parseMetadataHtml(html: string, pageUrl: string): FetchedMetadat
 }
 
 /**
+ * 按字节上限读取响应体,超限立刻取消流并返回 null。
+ *
+ * 注意顺序:必须先判大小再累积。先 `await response.text()` 再检查长度的话,
+ * 整个响应已经进了内存,大小限制就完全失去防护意义。
+ */
+async function readBodyCapped(response: Response, maxBytes: number): Promise<string | null> {
+  const declaredLength = Number(response.headers.get('content-length'))
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+    return null
+  }
+
+  const stream = response.body
+  if (!stream) {
+    // 无流式体(部分运行时/测试桩):只能整体读取后判断
+    const text = await response.text()
+    return text.length > maxBytes ? null : text
+  }
+
+  const reader = stream.getReader()
+  const decoder = new TextDecoder('utf-8')
+  let received = 0
+  let body = ''
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      if (!value) continue
+
+      received += value.byteLength
+      if (received > maxBytes) {
+        await reader.cancel().catch(() => {})
+        return null
+      }
+      body += decoder.decode(value, { stream: true })
+    }
+    body += decoder.decode()
+  } finally {
+    reader.releaseLock()
+  }
+
+  return body
+}
+
+/**
  * 抓取页面元数据(带 SSRF 防护)。
  * 纯运行时函数:用于 Server Actions / Worker;测试中可 mock fetch。
  */
@@ -175,8 +250,8 @@ export async function fetchMetadata(rawUrl: string): Promise<MetadataResult> {
       return { success: false, error: 'Not an HTML page' }
     }
 
-    const body = await response.text()
-    if (body.length > MAX_BODY_BYTES) {
+    const body = await readBodyCapped(response, MAX_BODY_BYTES)
+    if (body === null) {
       return { success: false, error: 'Response too large' }
     }
 

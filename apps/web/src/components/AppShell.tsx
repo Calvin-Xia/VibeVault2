@@ -10,9 +10,10 @@ import { Skeleton } from './ui/Skeleton'
 
 interface AppShellProps {
   children: React.ReactNode
+  statusCounts?: { inbox: number; reading: number; archived: number }
 }
 
-const AppShell: React.FC<AppShellProps> = ({ children }) => {
+const AppShell: React.FC<AppShellProps> = ({ children, statusCounts }) => {
   const { data: session } = useSession()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isDark, setIsDark] = useState(false)
@@ -46,14 +47,14 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
       {/* Desktop sidebar — hidden on mobile */}
       <aside className="hidden lg:block">
         <Suspense fallback={<Skeleton className="w-64 h-full" />}>
-          <Sidebar />
+          <Sidebar statusCounts={statusCounts} />
         </Suspense>
       </aside>
 
       {/* Mobile sidebar — sheet overlay */}
       <MobileSheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} side="left">
         <Suspense fallback={<Skeleton className="w-64 h-full" />}>
-          <Sidebar onClose={() => setMobileMenuOpen(false)} />
+          <Sidebar statusCounts={statusCounts} onClose={() => setMobileMenuOpen(false)} />
         </Suspense>
       </MobileSheet>
 

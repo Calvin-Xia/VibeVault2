@@ -45,9 +45,16 @@ function LinkDetail() {
   const [isRetryingMetadata, setIsRetryingMetadata] = useState(false)
 
   useEffect(() => {
+    // 客户端在详情页之间跳转时 id 会变化,而旧请求可能后返回并覆盖新页面。
+    // 用 cancelled 标记丢弃过期响应,顺带避免卸载后再 setState。
+    let cancelled = false
+
     const fetchLink = async () => {
+      setIsLoading(true)
+      setError(null)
       try {
         const result = await getLink(id)
+        if (cancelled) return
         if (result.success && result.link) {
           setLink(result.link as unknown as Link)
           setTitle(result.link.title || '')
@@ -57,12 +64,17 @@ function LinkDetail() {
           setError(result.error || '加载链接详情失败')
         }
       } catch {
+        if (cancelled) return
         setError('加载链接详情失败')
       } finally {
-        setIsLoading(false)
+        if (!cancelled) setIsLoading(false)
       }
     }
     fetchLink()
+
+    return () => {
+      cancelled = true
+    }
   }, [id])
 
   const handleSave = async () => {

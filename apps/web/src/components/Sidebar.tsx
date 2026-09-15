@@ -54,6 +54,9 @@ const Sidebar: React.FC<SidebarProps> = ({ statusCounts, onClose }) => {
         setTagName('')
         setTagColor(DEFAULT_TAG_COLOR)
         setShowAddTagForm(false)
+      } else {
+        // 重名等情况是返回值而非异常,不处理就会静默失败、表单看起来没反应
+        toast.error(result.error || '创建标签失败')
       }
     } catch {
       toast.error('创建标签失败')

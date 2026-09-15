@@ -5,6 +5,12 @@ import { prisma } from '@vibevault/db'
 import { getResend } from '@/lib/resend'
 import { hashCode } from '@/lib/otp'
 
+/**
+ * 进程内滑动窗口限流。
+ *
+ * 注意这是"尽力而为"的限流:Workers 上按 isolate/colo 独立计数,不能当作全局限制。
+ * 真正的强约束是 MAX_ATTEMPTS(每个验证码最多试 5 次)。
+ */
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 
 const OTP_EXPIRY_MINUTES = 5
@@ -12,8 +18,30 @@ const MAX_ATTEMPTS = 5
 const MAX_SENDS_PER_WINDOW = 5
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000
 
+/** 表中最多保留多少条记录;超出后先清理过期项,仍超限则整体清空 */
+const MAX_RATE_LIMIT_ENTRIES = 10_000
+
+/**
+ * 防止 Map 无限增长:长驻 isolate 上每个新邮箱都会新增一条记录且永不过期回收,
+ * 累积下去就是内存泄漏。只在表超过阈值时才做 O(n) 扫描,避免每个请求都全表遍历。
+ */
+function evictRateLimitEntries(now: number) {
+  if (rateLimitMap.size <= MAX_RATE_LIMIT_ENTRIES) return
+
+  for (const [key, value] of rateLimitMap) {
+    if (now > value.resetAt) rateLimitMap.delete(key)
+  }
+
+  // 清理后仍超限(大量活跃邮箱)时整体清空:
+  // 宁可短暂放宽限流,也不能让内存无上界增长
+  if (rateLimitMap.size > MAX_RATE_LIMIT_ENTRIES) {
+    rateLimitMap.clear()
+  }
+}
+
 function checkRateLimit(email: string): { allowed: boolean; retryAfterMs?: number } {
   const now = Date.now()
+  evictRateLimitEntries(now)
   const entry = rateLimitMap.get(email)
 
   if (!entry || now > entry.resetAt) {

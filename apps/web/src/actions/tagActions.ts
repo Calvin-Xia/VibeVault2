@@ -6,6 +6,17 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@vibevault/db'
 import { DEFAULT_TAG_COLOR } from '@/lib/tagColor'
 
+const MAX_TAG_NAME_LENGTH = 50
+const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/
+
+/**
+ * @@unique([userId, name]) 冲突。按 code 判断而不是 instanceof,
+ * 这样不依赖具体适配器抛出的错误类身份。
+ */
+function isUniqueConstraintError(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && (error as { code?: unknown }).code === 'P2002'
+}
+
 export async function listTags() {
   const session = await getServerSession(authOptions)
   
@@ -43,24 +54,31 @@ export async function createTag(data: { name: string; color?: string }) {
     return { success: false, error: 'User not authenticated' }
   }
 
-  if (!data.name.trim()) {
+  const name = typeof data?.name === 'string' ? data.name.trim() : ''
+  if (!name) {
     return { success: false, error: 'Tag name is required' }
+  }
+  if (name.length > MAX_TAG_NAME_LENGTH) {
+    return { success: false, error: `标签名称不能超过 ${MAX_TAG_NAME_LENGTH} 个字符` }
   }
 
   try {
-    const hexColorRegex = /^#[0-9A-Fa-f]{6}$/
-    const safeColor = data.color && hexColorRegex.test(data.color) ? data.color : DEFAULT_TAG_COLOR
+    const safeColor = data.color && HEX_COLOR.test(data.color) ? data.color : DEFAULT_TAG_COLOR
     const tag = await prisma.tag.create({
       data: {
         userId: session.user.id,
-        name: data.name.trim(),
+        name,
         color: safeColor,
       },
     })
 
     revalidatePath('/app')
+    revalidatePath('/app/graph')
     return { success: true, tag }
   } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      return { success: false, error: '已存在同名标签' }
+    }
     console.error('Error creating tag:', error)
     return { success: false, error: 'Failed to create tag' }
   }
@@ -107,27 +125,34 @@ export async function updateTag(tagId: string, data: { name: string; color?: str
     return { success: false, error: 'User not authenticated' }
   }
 
-  if (!data.name.trim()) {
+  const name = typeof data?.name === 'string' ? data.name.trim() : ''
+  if (!name) {
     return { success: false, error: 'Tag name is required' }
+  }
+  if (name.length > MAX_TAG_NAME_LENGTH) {
+    return { success: false, error: `标签名称不能超过 ${MAX_TAG_NAME_LENGTH} 个字符` }
   }
 
   try {
-    const hexColorRegex = /^#[0-9A-Fa-f]{6}$/
-    const safeColor = data.color && hexColorRegex.test(data.color) ? data.color : DEFAULT_TAG_COLOR
+    const safeColor = data.color && HEX_COLOR.test(data.color) ? data.color : DEFAULT_TAG_COLOR
     const tag = await prisma.tag.update({
       where: {
         id: tagId,
         userId: session.user.id,
       },
       data: {
-        name: data.name.trim(),
+        name,
         color: safeColor,
       },
     })
 
     revalidatePath('/app')
+    revalidatePath('/app/graph')
     return { success: true, tag }
   } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      return { success: false, error: '已存在同名标签' }
+    }
     console.error('Error updating tag:', error)
     return { success: false, error: 'Failed to update tag' }
   }

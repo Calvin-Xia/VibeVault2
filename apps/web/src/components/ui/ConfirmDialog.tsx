@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useId, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { AlertTriangle, X } from 'lucide-react'
 
 interface ConfirmDialogProps {
@@ -28,6 +29,12 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const cancelButtonRef = useRef<HTMLButtonElement>(null)
+  // 每个实例独立的 id,避免同页两个对话框时 aria-labelledby 指向错误的节点
+  const titleId = useId()
+  const descriptionId = useId()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => setMounted(true), [])
 
   const handleClose = useCallback(() => {
     if (!isConfirming) {
@@ -81,9 +88,12 @@ export function ConfirmDialog({
     [handleClose]
   )
 
-  if (!open) return null
+  if (!open || !mounted) return null
 
-  return (
+  // 必须 portal 到 body:卡片所在列用了 `contain: layout`,卡片的 motion.div 又带 transform,
+  // 两者都会成为 position:fixed 的包含块 —— 留在原地时 inset-0 会相对卡片列解析,
+  // 对话框被定位到整列高度的中点而不是视口中央(长列表里直接跑到屏幕外)。
+  return createPortal(
     <div
       className="overlay fixed inset-0 flex items-center justify-center z-50 p-4"
       onClick={handleClose}
@@ -92,8 +102,8 @@ export function ConfirmDialog({
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="confirm-dialog-title"
-        aria-describedby="confirm-dialog-description"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
         className="panel relative bg-card text-card-foreground rounded-2xl shadow-2xl p-6 max-w-sm w-full"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handlePanelKeyDown}
@@ -126,13 +136,13 @@ export function ConfirmDialog({
           </div>
 
           <h3
-            id="confirm-dialog-title"
+            id={titleId}
             className="text-lg font-semibold text-card-foreground mb-1"
           >
             {title}
           </h3>
           <p
-            id="confirm-dialog-description"
+            id={descriptionId}
             className="text-sm text-muted-foreground"
           >
             {description}
@@ -159,6 +169,7 @@ export function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
