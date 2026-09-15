@@ -116,6 +116,31 @@ describe('isBlockedLiteralHost', () => {
     }
   })
 
+  it('拦截非全局单播的其余 IPv6 段', () => {
+    // 这些段漏掉时都是通往内网的 SSRF 路径:
+    // 旧实现"一律拒绝 IPv6 字面量"能兜住,改成精确判定后必须逐段补上
+    const cases: Array<[string, string]> = [
+      ['fec0::1', 'fec0::/10 站点本地'],
+      ['feff::1', 'fec0::/10 上边界'],
+      ['64:ff9b:1::1', '64:ff9b:1::/48 本地 NAT64'],
+      ['100::1', '100::/64 丢弃专用'],
+      ['2001:db8::1', '2001:db8::/32 文档'],
+      ['2001:2::1', '2001:2::/48 基准测试'],
+      ['2001:10::1', 'ORCHID'],
+      ['2001:2f::1', 'ORCHIDv2'],
+    ]
+    for (const [host, why] of cases) {
+      expect(isBlockedLiteralHost(host), `应拦截 ${host} (${why})`).toBe(true)
+    }
+  })
+
+  it('不误伤相邻的全局单播段', () => {
+    // 被拦网段的上下边界外侧必须是放行的公网地址,防止掩码写宽误杀
+    for (const host of ['2606:4700::1111', '2001:4860:4860::8888', '2001:db7::1', '2001:db9::1', '3ff0::1', '3fff:1000::1']) {
+      expect(isBlockedLiteralHost(host), `应放行 ${host}`).toBe(false)
+    }
+  })
+
   it('放行公网 IP 与普通域名', () => {
     for (const host of ['1.1.1.1', '8.8.8.8', '2606:4700::1111', '2001:4860:4860::8888', 'example.com', 'sub.example.co.uk']) {
       expect(isBlockedLiteralHost(host), `应放行 ${host}`).toBe(false)
@@ -137,14 +162,37 @@ describe('isBlockedIpv6', () => {
     expect(isBlockedIpv6(groups('ff02::1'))).toBe(true)
   })
 
-  it('拦截内嵌内网的映射地址,放行内嵌公网地址', () => {
-    expect(isBlockedIpv6(groups('::ffff:192.168.0.1'))).toBe(true)
-    expect(isBlockedIpv6(groups('::ffff:1.1.1.1'))).toBe(false)
+  it('默认拒绝:全局单播 2000::/3 之外的地址一律拦截', () => {
+    // 含 IPv4-mapped/compatible —— 即使内嵌的是公网 IPv4 也拒绝。
+    // 这类形态在 2000::/3 之外,直接拒绝比"取出内嵌 IPv4 再判定"更不容易出错,
+    // 而收藏夹场景根本不需要它们。
+    for (const host of ['::ffff:192.168.0.1', '::ffff:1.1.1.1', '::127.0.0.1', '64:ff9b::7f00:1', '100::1', 'fec0::1', 'feff::1', 'fec0:0:0:ffff::1']) {
+      expect(isBlockedIpv6(groups(host)), `应拦截 ${host}`).toBe(true)
+    }
   })
 
-  it('放行公网 IPv6', () => {
-    expect(isBlockedIpv6(groups('2606:4700::1111'))).toBe(false)
-    expect(isBlockedIpv6(groups('2001:4860:4860::8888'))).toBe(false)
+  it('拦截全局单播内部不可全局路由的特殊段', () => {
+    // 2001::/23 覆盖 2001:0000::–2001:01ff::,2001:db8::/32 与 3fff::/20 单独判定
+    for (const host of ['2001::1', '2001:2::1', '2001:10::1', '2001:1ff::1', '2001:db8::1', '3fff::1', '3fff:fff::1']) {
+      expect(isBlockedIpv6(groups(host)), `应拦截 ${host}`).toBe(true)
+    }
+  })
+
+  it('放行公网 IPv6,且不误伤被拦网段的相邻地址', () => {
+    const allowed = [
+      '2606:4700::1111', // Cloudflare
+      '2001:4860:4860::8888', // Google
+      '2a00:1450:4001::1',
+      '2400:cb00::1',
+      '2001:200::1', // 紧邻 2001::/23 上边界之外
+      '2001:db9::1', // 紧邻 2001:db8::/32 之外
+      '3ff0::1', // 紧邻 3fff::/20 下方 —— 验证 /20 掩码没有写宽
+      '3ffe:ffff::1', // 紧邻 3fff::/20 下方
+      '2002:808:808::1', // 6to4 但内嵌 8.8.8.8(公网)
+    ]
+    for (const host of allowed) {
+      expect(isBlockedIpv6(groups(host)), `应放行 ${host}`).toBe(false)
+    }
   })
 })
 
